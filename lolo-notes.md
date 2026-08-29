@@ -43,6 +43,35 @@ This would let the turret continue tracking without the computer.
 - The reported servo position is commanded position, not measured physical
   position. There is no encoder feedback.(Maybe inpractical to implement)
 
+## Tracker selection and packet integrity
+
+`GPS_STAT` packets can describe a rocket tracker (`TRK`), the ground station
+itself (`GS`), or a found/lost rocket (`FND`). They also contain the device ID.
+The current parser accepts all three types, then discards both the type and ID.
+Tracking should eventually require `TRK` and the expected rocket ID so the
+turret cannot point at the ground station or another rocket.
+
+Packets contain a `CRC_OK` / `CRC_ERR` result and end with a separate CRC-16
+checksum. The parser currently stores the first result in a variable called
+`crc`, but never checks it. It also stops parsing before the final checksum and
+does not calculate CRC-16 itself. As a result, even a packet already marked
+`CRC_ERR` is returned as valid GPS data, used to calculate angles, and may send
+commands to the turret.
+
+The 20 km outlier filter is not a replacement for CRC validation. It only
+rejects a position when its geometric jump is enormous. Corrupted data can
+still produce a believable position less than 20 km away, a bad altitude or
+angle, or a bad first calibration point. At minimum, reject `CRC_ERR`; ideally,
+also calculate and verify the final CRC-16 checksum.
+
+## Unused telemetry
+
+The current `GPS_STAT` parser already extracts but discards horizontal
+velocity, heading, vertical velocity, total satellite count, satellite signal
+quality counts, packet type, tracker ID, and CRC status.
+
+Take into acount for dashboard.
+
 ## IDEA
 
 Threads could be nice but may not exist on the selected Arduino.
