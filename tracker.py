@@ -27,8 +27,10 @@ Requisitos:  pip install pyserial numpy
 
 import re
 import sys
+import csv
 import time
 import argparse
+from datetime import datetime
 import numpy as np
 import serial
 import serial.tools.list_ports
@@ -38,8 +40,8 @@ import serial.tools.list_ports
 # CONFIGURACIÓN  — EDITAR ACÁ
 # ============================================================
 # >>> GPS DE LA GROUND STATION (cargar valores reales) <<<
-GS_LAT = 31.956
-GS_LON = -102.4034
+GS_LAT = 31.95610
+GS_LON = -102.40344
 GS_ALT = 915.0
 
 # >>> OFFSET DE PITCH (grados) — apuntando recto al frente, tilt=0 <<<
@@ -49,7 +51,7 @@ PITCH_OFFSET = 0.0
 
 # Umbral de ALTURA: solo ajustar el pitch si la altitud cambio mas que esto (m).
 # Evita micro-movimientos del eje de elevacion por el ruido del GPS.
-UMBRAL_ALTURA_M = 0.001
+UMBRAL_ALTURA_M = 10.0
 
 # Puertos por defecto (se pueden sobreescribir por linea de comandos)
 RX_PORT_DEFAULT      = "COM7"   # receiver Featherweight
@@ -221,6 +223,23 @@ def main():
 
     print(f"Escuchando paquetes GPS en {args.rx}... (Ctrl+C para parar)\n")
 
+    # --- Abrir CSV de log (nombre automatico con fecha/hora) ---
+    csv_path = rf"C:\Users\felip\Documents\Ground_Station\csv_vuelos\vuelo_{datetime.now():%Y%m%d_%H%M%S}.csv"
+  
+    CSV_FIELDS = [
+        "timestamp", "n_gps", "evento",
+        "lat", "lon", "alt_m", "fix",
+        "enu_este", "enu_norte", "enu_up",
+        "yaw", "tilt", "dist_h",
+        "yaw_cmd", "pitch_cmd",
+        "mover_yaw", "mover_pitch",
+    ]
+    csv_fh = open(csv_path, "w", newline="", encoding="utf-8")
+    csv_writer = csv.DictWriter(csv_fh, fieldnames=CSV_FIELDS, restval="")
+    csv_writer.writeheader()
+    csv_fh.flush()
+    print(f"Log CSV: {csv_path}\n")
+
     marco = None          # se setea con el primer GPS valido
     ultimo_yaw = None     # ultimo yaw que disparo movimiento (filtro angular)
     ultima_alt = None     # ultima altitud que disparo ajuste de pitch (filtro 10m)
@@ -240,6 +259,7 @@ def main():
 
             punto = gps_a_enu(lat, lon, alt, GS_LAT, GS_LON, GS_ALT)
             n_gps += 1
+            ts = datetime.now().isoformat(timespec="milliseconds")
 
             # Cerado: primer paquete define el frente (yaw=0, pitch al offset)
             if marco is None:
@@ -253,6 +273,18 @@ def main():
                 mandar(ard, f"T{PITCH_OFFSET:.1f}")
                 ultimo_yaw = 0.0
                 ultima_alt = alt
+                # Log de la fila de cerado
+                csv_writer.writerow({
+                    "timestamp": ts, "n_gps": n_gps, "evento": "CERADO",
+                    "lat": f"{lat:.6f}", "lon": f"{lon:.6f}",
+                    "alt_m": f"{alt:.2f}", "fix": fix,
+                    "enu_este": f"{punto[0]:.2f}", "enu_norte": f"{punto[1]:.2f}",
+                    "enu_up": f"{punto[2]:.2f}",
+                    "yaw": "0.00", "tilt": f"{tilt0:.2f}", "dist_h": "0.00",
+                    "yaw_cmd": "0.0", "pitch_cmd": f"{PITCH_OFFSET:.1f}",
+                    "mover_yaw": 1, "mover_pitch": 1,
+                })
+                csv_fh.flush()
                 continue
 
             f_hat, l_hat, u_hat = marco
@@ -260,16 +292,34 @@ def main():
 
             # --- EJE YAW: filtro angular ---
             mover_yaw = (ultimo_yaw is None or abs(yaw - ultimo_yaw) >= UMBRAL_YAW)
+            yaw_cmd = ""
             if mover_yaw:
+                yaw_cmd = f"{yaw:.1f}"
                 mandar(ard, f"Y{yaw:.1f}")
                 ultimo_yaw = yaw
 
             # --- EJE PITCH: filtro por cambio de ALTURA (>= 10m) ---
             mover_pitch = (ultima_alt is None or abs(alt - ultima_alt) >= UMBRAL_ALTURA_M)
+            pitch_cmd = ""
             if mover_pitch:
                 tilt_cmd = tilt + PITCH_OFFSET
+                pitch_cmd = f"{tilt_cmd:.1f}"
                 mandar(ard, f"T{tilt_cmd:.1f}")
                 ultima_alt = alt
+
+            # Log de la fila de seguimiento
+            csv_writer.writerow({
+                "timestamp": ts, "n_gps": n_gps, "evento": "TRACK",
+                "lat": f"{lat:.6f}", "lon": f"{lon:.6f}",
+                "alt_m": f"{alt:.2f}", "fix": fix,
+                "enu_este": f"{punto[0]:.2f}", "enu_norte": f"{punto[1]:.2f}",
+                "enu_up": f"{punto[2]:.2f}",
+                "yaw": f"{yaw:.2f}", "tilt": f"{tilt:.2f}", "dist_h": f"{dist_h:.2f}",
+                "yaw_cmd": yaw_cmd, "pitch_cmd": pitch_cmd,
+                "mover_yaw": 1 if mover_yaw else 0,
+                "mover_pitch": 1 if mover_pitch else 0,
+            })
+            csv_fh.flush()
 
             # Reporte
             etiquetas = []
@@ -285,7 +335,9 @@ def main():
             rx.close()
         if ard.is_open:
             ard.close()
+        csv_fh.close()
         print(f"Total paquetes GPS procesados: {n_gps}")
+        print(f"Log guardado en: {csv_path}")
 
 
 if __name__ == '__main__':
