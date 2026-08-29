@@ -62,6 +62,11 @@ BAUD = 115200
 # Evita micro-movimientos por el jitter del GPS.
 UMBRAL_YAW = 1.0
 
+# Filtro de OUTLIERS: descartar paquetes GPS cuyo salto 3D respecto al ultimo
+# punto valido supere este valor (m). Un paquete corrupto con un salto enorme
+# rompe los plots y hace perder el fijado, asi que se ignora por completo.
+SALTO_MAX_M = 20000.0
+
 
 # ============================================================
 # 1. PARSING GPS  (tomado del script de captura, solo lo necesario)
@@ -193,6 +198,7 @@ def main():
     print(f"Arduino  : {args.arduino}")
     print(f"GS origen: lat={GS_LAT}  lon={GS_LON}")
     print(f"Pitch    : offset={PITCH_OFFSET:.1f}°  umbral altura={UMBRAL_ALTURA_M:.0f}m")
+    print(f"Outliers : descarta saltos 3D > {SALTO_MAX_M:.0f} m")
     print("=" * 60)
     print("IMPORTANTE: apunta la antena al cohete en la rampa.")
     print("El PRIMER paquete GPS define el frente (yaw=0).")
@@ -224,8 +230,7 @@ def main():
     print(f"Escuchando paquetes GPS en {args.rx}... (Ctrl+C para parar)\n")
 
     # --- Abrir CSV de log (nombre automatico con fecha/hora) ---
-    csv_path = rf"C:\Users\felip\Documents\Ground_Station\csv_vuelos\vuelo_{datetime.now():%Y%m%d_%H%M%S}.csv"
-  
+    csv_path = rf"C:\Users\felip\Documents\Ground_Station\vuelo_{datetime.now():%Y%m%d_%H%M%S}.csv"
     CSV_FIELDS = [
         "timestamp", "n_gps", "evento",
         "lat", "lon", "alt_m", "fix",
@@ -243,6 +248,7 @@ def main():
     marco = None          # se setea con el primer GPS valido
     ultimo_yaw = None     # ultimo yaw que disparo movimiento (filtro angular)
     ultima_alt = None     # ultima altitud que disparo ajuste de pitch (filtro 10m)
+    ultimo_punto_valido = None  # ultimo ENU valido, para el filtro de outliers
     n_gps = 0
 
     try:
@@ -258,6 +264,18 @@ def main():
                 continue
 
             punto = gps_a_enu(lat, lon, alt, GS_LAT, GS_LON, GS_ALT)
+
+            # --- FILTRO DE OUTLIERS: descartar saltos 3D enormes ---
+            # Un paquete corrupto con un salto > SALTO_MAX_M respecto al ultimo
+            # punto valido se ignora por completo (no mueve servos, no loguea,
+            # no actualiza referencias). Asi no rompe el plot ni pierde el fijado.
+            if ultimo_punto_valido is not None:
+                salto = np.linalg.norm(punto - ultimo_punto_valido)
+                if salto > SALTO_MAX_M:
+                    print(f"  [OUTLIER ignorado] salto={salto:.0f} m "
+                          f"(> {SALTO_MAX_M:.0f} m)  lat={lat:.5f} lon={lon:.5f} alt={alt:.0f}")
+                    continue
+
             n_gps += 1
             ts = datetime.now().isoformat(timespec="milliseconds")
 
@@ -273,6 +291,7 @@ def main():
                 mandar(ard, f"T{PITCH_OFFSET:.1f}")
                 ultimo_yaw = 0.0
                 ultima_alt = alt
+                ultimo_punto_valido = punto
                 # Log de la fila de cerado
                 csv_writer.writerow({
                     "timestamp": ts, "n_gps": n_gps, "evento": "CERADO",
@@ -289,6 +308,9 @@ def main():
 
             f_hat, l_hat, u_hat = marco
             yaw, tilt, dist_h = calcular_yaw_tilt_rel(gs, punto, f_hat, l_hat, u_hat)
+
+            # Punto valido: actualizar referencia para el filtro de outliers
+            ultimo_punto_valido = punto
 
             # --- EJE YAW: filtro angular ---
             mover_yaw = (ultimo_yaw is None or abs(yaw - ultimo_yaw) >= UMBRAL_YAW)
