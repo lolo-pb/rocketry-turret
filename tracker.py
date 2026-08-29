@@ -38,12 +38,18 @@ import serial.tools.list_ports
 # CONFIGURACIÓN  — EDITAR ACÁ
 # ============================================================
 # >>> GPS DE LA GROUND STATION (cargar valores reales) <<<
-GS_LAT = 31.95610
-GS_LON = -102.40344
+GS_LAT = 31.956
+GS_LON = -102.4034
 GS_ALT = 915.0
 
-# >>> TILT FIJO (grados) — prueba en tierra / seguimiento horizontal <<<
-TILT_FIJO = 0.0
+# >>> OFFSET DE PITCH (grados) — apuntando recto al frente, tilt=0 <<<
+# El Arduino ya suma OFFSET_EL=105; este es un ajuste fino adicional si la
+# antena no quedo perfectamente horizontal al apuntar al frente. Normalmente 0.
+PITCH_OFFSET = 0.0
+
+# Umbral de ALTURA: solo ajustar el pitch si la altitud cambio mas que esto (m).
+# Evita micro-movimientos del eje de elevacion por el ruido del GPS.
+UMBRAL_ALTURA_M = 0.001
 
 # Puertos por defecto (se pueden sobreescribir por linea de comandos)
 RX_PORT_DEFAULT      = "COM7"   # receiver Featherweight
@@ -129,16 +135,18 @@ def construir_marco_calibracion(base, cohete_inicial):
     u_hat = np.array([0.0, 0.0, 1.0])
     l_hat = np.cross(u_hat, f_hat)
     l_hat = l_hat / np.linalg.norm(l_hat)
-    return f_hat, l_hat
+    return f_hat, l_hat, u_hat
 
 
-def calcular_yaw_rel(base, cohete, f_hat, l_hat):
+def calcular_yaw_tilt_rel(base, cohete, f_hat, l_hat, u_hat):
     v = cohete - base
     cf = np.dot(v, f_hat)
     ci = np.dot(v, l_hat)
+    ca = np.dot(v, u_hat)
     dist_h = np.sqrt(cf**2 + ci**2)
-    yaw = np.degrees(np.arctan2(ci, cf))
-    return yaw, dist_h
+    yaw  = np.degrees(np.arctan2(ci, cf))
+    tilt = np.degrees(np.arctan2(ca, dist_h))
+    return yaw, tilt, dist_h
 
 
 # ============================================================
@@ -182,7 +190,7 @@ def main():
     print(f"Receiver : {args.rx}")
     print(f"Arduino  : {args.arduino}")
     print(f"GS origen: lat={GS_LAT}  lon={GS_LON}")
-    print(f"Tilt fijo: {TILT_FIJO:.1f}°")
+    print(f"Pitch    : offset={PITCH_OFFSET:.1f}°  umbral altura={UMBRAL_ALTURA_M:.0f}m")
     print("=" * 60)
     print("IMPORTANTE: apunta la antena al cohete en la rampa.")
     print("El PRIMER paquete GPS define el frente (yaw=0).")
@@ -197,11 +205,6 @@ def main():
         sys.exit(1)
     time.sleep(2.0)            # reset del Arduino
     ard.reset_input_buffer()
-
-    # Fijar tilt una vez
-    print(f"\nFijando tilt en {TILT_FIJO:.1f}°...")
-    mandar(ard, f"T{TILT_FIJO:.1f}")
-    time.sleep(0.5)
 
     # Abrir receiver Featherweight
     try:
@@ -219,7 +222,8 @@ def main():
     print(f"Escuchando paquetes GPS en {args.rx}... (Ctrl+C para parar)\n")
 
     marco = None          # se setea con el primer GPS valido
-    ultimo_yaw = None     # para el filtro de umbral
+    ultimo_yaw = None     # ultimo yaw que disparo movimiento (filtro angular)
+    ultima_alt = None     # ultima altitud que disparo ajuste de pitch (filtro 10m)
     n_gps = 0
 
     try:
@@ -237,27 +241,42 @@ def main():
             punto = gps_a_enu(lat, lon, alt, GS_LAT, GS_LON, GS_ALT)
             n_gps += 1
 
-            # Cerado: primer paquete define el frente
+            # Cerado: primer paquete define el frente (yaw=0, pitch al offset)
             if marco is None:
                 marco = construir_marco_calibracion(gs, punto)
+                f_hat, l_hat, u_hat = marco
+                _, tilt0, _ = calcular_yaw_tilt_rel(gs, punto, f_hat, l_hat, u_hat)
                 print(f"  [CERADO] Frente fijado con primer GPS "
-                      f"(lat={lat:.5f}, lon={lon:.5f}). yaw=0 aca.\n")
+                      f"(lat={lat:.5f}, lon={lon:.5f}, alt={alt:.1f}m).")
+                print(f"           yaw=0 aca.  tilt inicial del cohete={tilt0:.1f}°\n")
                 mandar(ard, "Y0.0")
+                mandar(ard, f"T{PITCH_OFFSET:.1f}")
                 ultimo_yaw = 0.0
+                ultima_alt = alt
                 continue
 
-            f_hat, l_hat = marco
-            yaw, dist_h = calcular_yaw_rel(gs, punto, f_hat, l_hat)
+            f_hat, l_hat, u_hat = marco
+            yaw, tilt, dist_h = calcular_yaw_tilt_rel(gs, punto, f_hat, l_hat, u_hat)
 
-            # Filtro de umbral: solo mover si cambio lo suficiente
-            if ultimo_yaw is not None and abs(yaw - ultimo_yaw) < UMBRAL_YAW:
-                print(f"  GPS #{n_gps}  yaw={yaw:6.2f}  dist={dist_h:6.1f}m  "
-                      f"[sin cambio, no se mueve]")
-                continue
+            # --- EJE YAW: filtro angular ---
+            mover_yaw = (ultimo_yaw is None or abs(yaw - ultimo_yaw) >= UMBRAL_YAW)
+            if mover_yaw:
+                mandar(ard, f"Y{yaw:.1f}")
+                ultimo_yaw = yaw
 
-            print(f"  GPS #{n_gps}  yaw={yaw:6.2f}  dist={dist_h:6.1f}m  -> Y{yaw:.1f}")
-            mandar(ard, f"Y{yaw:.1f}")
-            ultimo_yaw = yaw
+            # --- EJE PITCH: filtro por cambio de ALTURA (>= 10m) ---
+            mover_pitch = (ultima_alt is None or abs(alt - ultima_alt) >= UMBRAL_ALTURA_M)
+            if mover_pitch:
+                tilt_cmd = tilt + PITCH_OFFSET
+                mandar(ard, f"T{tilt_cmd:.1f}")
+                ultima_alt = alt
+
+            # Reporte
+            etiquetas = []
+            etiquetas.append(f"Y{yaw:.1f}" if mover_yaw else "yaw-")
+            etiquetas.append(f"T{tilt:.1f}" if mover_pitch else "pitch-")
+            print(f"  GPS #{n_gps}  yaw={yaw:6.2f}  tilt={tilt:6.2f}  "
+                  f"alt={alt:7.1f}m  dist={dist_h:6.1f}m  -> {' '.join(etiquetas)}")
 
     except KeyboardInterrupt:
         print("\n\n[Detenido]")
