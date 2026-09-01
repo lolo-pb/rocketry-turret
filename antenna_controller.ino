@@ -64,7 +64,7 @@ void loop() {
   approach(targetYaw, targetTilt);
   delay(PASO_MS);
 
-  if (loops++ % 10 == 0)
+  if (loops++ % 10 == 0) // TODO: esto puede ser mas grande (Probar)
     reportar();
 }
 // approaches target without blocking
