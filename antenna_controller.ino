@@ -8,15 +8,15 @@ Servo servoElevacion;
 
 // ==============================
 // OFFSET FRONTAL — posición física donde el servo apunta al cohete
-// con yaw=0 y tilt=0 (cohete enfrente de la ground station)
+// con azimut=0 y elevation=0 (cohete enfrente de la ground station)
 const int OFFSET_AZ = 110;
 const int OFFSET_EL = 105;
 
 // DIRECCIÓN — flipear a -1 si el servo se mueve al revés (ajustar probando)
 const int DIR_AZ = 1;
-// yaw positivo -> servo aumenta. Cambiar a -1 si va al reves
+// azimut positivo -> servo aumenta. Cambiar a -1 si va al reves
 const int DIR_EL = 1;
-// tilt positivo -> servo aumenta. Cambiar a -1 si va al reves
+// elevation positivo -> servo aumenta. Cambiar a -1 si va al reves
 
 // LÍMITES MECÁNICOS DE SEGURIDAD — ajustar al rango real de tus servos
 const int AZ_MIN = 0, AZ_MAX = 270;
@@ -40,44 +40,44 @@ void setup() {
   servoElevacion.write(posActualEl);
   delay(100);
 
-  Serial.println("LISTO. Enviar: Y<yaw> T<tilt>  (ej: Y15 T30)");
+  Serial.println("LISTO. Enviar: A<azimut> E<elevation>  (ej: A15 E30)");
 }
 
 void loop() {
   static int loops = 0;
-  static int targetYaw = posActualAz;
-  static int targetTilt = posActualEl;
+  static int targetAzimut = posActualAz;
+  static int targetElevation = posActualEl;
 
   if (Serial.available() > 0) {
     char tipo = Serial.read();
-    if (tipo == 'Y') {
-      float yaw = Serial.parseFloat();
-      targetYaw = OFFSET_AZ + DIR_AZ * (int)round(yaw);
-    } else if (tipo == 'T') {
-      float tilt = Serial.parseFloat();
-      targetTilt = OFFSET_EL + DIR_EL * (int)round(tilt);
+    if (tipo == 'A') {
+      float azimut = Serial.parseFloat();
+      targetAzimut = OFFSET_AZ + DIR_AZ * (int)round(azimut);
+    } else if (tipo == 'E') {
+      float elevation = Serial.parseFloat();
+      targetElevation = OFFSET_EL + DIR_EL * (int)round(elevation);
     }
     // Cualquier otro caracter (espacios, \n, \r) se ignora
   }
-  approach(targetYaw, targetTilt);
+  approach(targetAzimut, targetElevation);
   delay(STEP_MS);
 
   if (loops++ % 10 == 0) // TODO: esto puede ser mas grande (Probar)
     reportar();
 }
 // approaches target without blocking
-void approach(int targetYaw, int targetTilt) {
-  approachYaw(targetYaw);
-  approachTilt(targetTilt);
+void approach(int targetAz, int targetEl) {
+  approachAzimut(targetAz);
+  approachElevation(targetEl);
 }
-void approachYaw(int t) {
+void approachAzimut(int t) {
   t = constrain(t, AZ_MIN, AZ_MAX);
   if (posActualAz != t) {
     posActualAz += (t > posActualAz) ? STEP_POS : -STEP_POS;
     servoAzimut.write(posActualAz);
   }
 }
-void approachTilt(int t) {
+void approachElevation(int t) {
   t = constrain(t, EL_MIN, EL_MAX);
   if (posActualEl != t) {
     posActualEl += (t > posActualEl) ? STEP_POS : -STEP_POS;
