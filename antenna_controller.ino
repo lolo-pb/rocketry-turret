@@ -13,24 +13,22 @@ const int OFFSET_AZ = 110;
 const int OFFSET_EL = 105;
 
 // DIRECCIÓN — flipear a -1 si el servo se mueve al revés (ajustar probando)
-const int DIR_AZ =
-    1; // yaw positivo -> servo aumenta. Cambiar a -1 si va al reves
-const int DIR_EL =
-    1; // tilt positivo -> servo aumenta. Cambiar a -1 si va al reves
+const int DIR_AZ = 1;
+// yaw positivo -> servo aumenta. Cambiar a -1 si va al reves
+const int DIR_EL = 1;
+// tilt positivo -> servo aumenta. Cambiar a -1 si va al reves
 
 // LÍMITES MECÁNICOS DE SEGURIDAD — ajustar al rango real de tus servos
-const int AZ_MIN = 0;
-const int AZ_MAX = 270;
-const int EL_MIN = 0;
-const int EL_MAX = 270;
+const int AZ_MIN = 0, AZ_MAX = 270;
+const int EL_MIN = 0, EL_MAX = 270;
 // ==============================
-
-const int POS_STEP = 1; // Note, this needs to be 1 or else it can overshoot
 
 int posActualAz = OFFSET_AZ;
 int posActualEl = OFFSET_EL;
 
-const int PASO_MS = 40; // ms entre cada grado (mas alto = mas lento)
+const int STEP_MS = 40; // ms entre cada loop (mas alto = mas lento)
+const int STEP_POS = 1; // Movimiento por loop del servo
+//                         Note, this needs to be 1 or else it can overshoot
 
 void setup() {
   Serial.begin(115200);
@@ -62,7 +60,7 @@ void loop() {
     // Cualquier otro caracter (espacios, \n, \r) se ignora
   }
   approach(targetYaw, targetTilt);
-  delay(PASO_MS);
+  delay(STEP_MS);
 
   if (loops++ % 10 == 0) // TODO: esto puede ser mas grande (Probar)
     reportar();
@@ -75,14 +73,14 @@ void approach(int targetYaw, int targetTilt) {
 void approachYaw(int t) {
   t = constrain(t, AZ_MIN, AZ_MAX);
   if (posActualAz != t) {
-    posActualAz += (t > posActualAz) ? POS_STEP : -POS_STEP;
+    posActualAz += (t > posActualAz) ? STEP_POS : -STEP_POS;
     servoAzimut.write(posActualAz);
   }
 }
 void approachTilt(int t) {
   t = constrain(t, EL_MIN, EL_MAX);
   if (posActualEl != t) {
-    posActualEl += (t > posActualEl) ? POS_STEP : -POS_STEP;
+    posActualEl += (t > posActualEl) ? STEP_POS : -STEP_POS;
     servoElevacion.write(posActualEl);
   }
 }
