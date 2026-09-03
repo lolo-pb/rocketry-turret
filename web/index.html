@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rocketry Turret Dashboard</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: system-ui, sans-serif;
+      background: #0b1114;
+      color: #e5f0ec;
+    }
+    body {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 32px 20px;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(1.5rem, 4vw, 2.4rem);
+    }
+    .simulation {
+      color: #ffcf66;
+      border: 1px solid #a87a1d;
+      background: #2d2411;
+      padding: 7px 11px;
+      border-radius: 6px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .status {
+      display: flex;
+      gap: 20px;
+      padding: 14px 16px;
+      margin-bottom: 18px;
+      background: #121b20;
+      border: 1px solid #26343b;
+      border-radius: 8px;
+    }
+    .connected { color: #63e6a6; }
+    .disconnected { color: #ff7b72; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+    .card {
+      min-height: 92px;
+      padding: 16px;
+      background: #121b20;
+      border: 1px solid #26343b;
+      border-radius: 8px;
+    }
+    .label {
+      color: #92a6ae;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .value {
+      margin-top: 9px;
+      font: 600 1.55rem ui-monospace, monospace;
+    }
+    footer {
+      color: #70858e;
+      margin-top: 20px;
+      font-size: 0.88rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Rocketry Turret</h1>
+    <div class="simulation">SIMULATION MODE</div>
+  </header>
+
+  <div class="status">
+    <span id="connection" class="disconnected">Disconnected</span>
+    <span>Flight state: <strong id="flight_state">—</strong></span>
+  </div>
+
+  <main class="grid">
+    <div class="card"><div class="label">Elapsed</div><div class="value" id="elapsed_s">—</div></div>
+    <div class="card"><div class="label">Altitude</div><div class="value" id="altitude_m">—</div></div>
+    <div class="card"><div class="label">Vertical speed</div><div class="value" id="vertical_speed_m_s">—</div></div>
+    <div class="card"><div class="label">Acceleration</div><div class="value" id="acceleration_m_s2">—</div></div>
+    <div class="card"><div class="label">Yaw</div><div class="value" id="yaw_deg">—</div></div>
+    <div class="card"><div class="label">Tilt</div><div class="value" id="tilt_deg">—</div></div>
+    <div class="card"><div class="label">Distance</div><div class="value" id="distance_m">—</div></div>
+    <div class="card"><div class="label">GPS</div><div class="value" id="gps">—</div></div>
+  </main>
+
+  <footer>Workbook-inspired test profile. No serial ports or turret hardware are accessed.</footer>
+
+  <script>
+    const fields = {
+      elapsed_s: ["elapsed_s", " s"],
+      altitude_m: ["altitude_m", " m"],
+      vertical_speed_m_s: ["vertical_speed_m_s", " m/s"],
+      acceleration_m_s2: ["acceleration_m_s2", " m/s²"],
+      yaw_deg: ["yaw_deg", "°"],
+      tilt_deg: ["tilt_deg", "°"],
+      distance_m: ["distance_m", " m"],
+    };
+
+    function connect() {
+      const protocol = location.protocol === "https:" ? "wss" : "ws";
+      const socket = new WebSocket(`${protocol}://${location.host}/ws/telemetry`);
+      const connection = document.getElementById("connection");
+
+      socket.onopen = () => {
+        connection.textContent = "Connected";
+        connection.className = "connected";
+      };
+
+      socket.onmessage = (event) => {
+        const telemetry = JSON.parse(event.data);
+        document.getElementById("flight_state").textContent = telemetry.flight_state.toUpperCase();
+        for (const [elementId, [key, unit]] of Object.entries(fields)) {
+          document.getElementById(elementId).textContent = `${telemetry[key]}${unit}`;
+        }
+        const crc = telemetry.crc_ok ? "CRC OK" : "CRC ERROR";
+        document.getElementById("gps").textContent = `${telemetry.satellites} sats · fix ${telemetry.gps_fix} · ${crc}`;
+      };
+
+      socket.onclose = () => {
+        connection.textContent = "Disconnected — reconnecting";
+        connection.className = "disconnected";
+        setTimeout(connect, 1000);
+      };
+    }
+
+    connect();
+  </script>
+</body>
+</html>

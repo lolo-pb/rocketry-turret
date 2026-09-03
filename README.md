@@ -13,12 +13,17 @@ and commanding Arduino-controlled azimuth and elevation servos.
 
 ## Python setup
 
-Create and activate a virtual environment, then install the dependencies:
+On Linux, create and activate a virtual environment, then install the
+dependencies:
 
 ```shell
-python -m venv .venv
+python3 -m venv .venv
+source .venv/bin/activate
 python -m pip install -r requirements.txt
 ```
+
+On Windows PowerShell, use `py -m venv .venv` and then
+`.venv\Scripts\Activate.ps1` instead.
 
 Configure the ground-station coordinates, serial ports, thresholds, and other
 hardware-specific constants near the top of `tracker.py` before operation.
@@ -37,6 +42,20 @@ python tracker.py --rx COM7 --arduino COM6
 
 Point the antenna at the rocket on the launch rail before starting. The first
 valid GPS packet establishes the zero-yaw direction.
+
+## Dashboard simulation
+
+Install the requirements, then start the local dashboard:
+
+```shell
+python -m pip install -r requirements.txt
+python dashboard.py
+```
+
+The dashboard opens automatically at `http://127.0.0.1:8000` and runs a short,
+repeating simulated flight based on the TeleMega workbook data. It shows live
+telemetry without opening serial ports or sending commands to the turret. Stop
+the server with `Ctrl+C`.
 
 ## Arduino
 

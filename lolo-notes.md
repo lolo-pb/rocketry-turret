@@ -12,6 +12,25 @@ elevation, filters bad data, logs telemetry, and sends `Y...` / `T...` commands.
 `antenna_controller.ino` receives those commands and moves the azimuth and
 elevation servos.
 
+## Dashboard test
+
+```text
+dashboard.py simulator -> WebSocket -> web/index.html
+```
+
+Run it with `python dashboard.py`. It starts a local FastAPI server, opens the
+browser, and shows a deterministic simulated flight at 10 updates per second.
+The flight is a short, smoothed version of the TeleMega data in the Excel
+workbook and repeats automatically.
+
+Simulation mode does not import `tracker.py`, open serial ports, or send Arduino
+commands. The existing tracker and firmware are unchanged.
+
+The dashboard receives structured values for flight state, altitude, speed,
+acceleration, yaw, tilt, distance, satellites, GPS fix, and CRC status. Later,
+`tracker.py` can publish the same structure while remaining the only code that
+owns the serial ports.
+
 ## Proposed direction
 
 Move the tracking work onto the Arduino:
