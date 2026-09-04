@@ -8,16 +8,16 @@
     :root {
       color-scheme: dark;
       font-family: "Arial Narrow", "Roboto Condensed", ui-monospace, monospace;
-      background: #050705;
-      color: #d8d8c8;
-      --phosphor: #3cff55;
-      --phosphor-dim: #15922b;
+      background: #050505;
+      color: #d8d8d8;
+      --phosphor: #f1f3f1;
+      --phosphor-dim: #7b817d;
       --amber: #f4b642;
       --danger: #ff584d;
-      --panel: #242822;
-      --panel-deep: #111410;
-      --edge: #4c5148;
-      --ivory: #dedecf;
+      --panel: #090909;
+      --panel-deep: #030303;
+      --edge: #3e4240;
+      --ivory: #e4e7e5;
     }
 
     * {
@@ -31,22 +31,17 @@
       min-width: 320px;
       margin: 0;
       overflow: hidden;
-      background:
-        radial-gradient(circle at 50% -10%, #2d332b 0, transparent 38%),
-        linear-gradient(115deg, transparent 48%, rgba(255, 255, 255, 0.018) 50%, transparent 52%),
-        #080a08;
+      background: #030303;
     }
 
     .cockpit {
       width: calc(100% - 12px);
       height: calc(100% - 12px);
       margin: 6px auto;
-      border: 1px solid #4b5047;
-      border-radius: 5px;
-      background:
-        linear-gradient(rgba(255, 255, 255, 0.018), rgba(0, 0, 0, 0.09)),
-        #1b1f1a;
-      box-shadow: 0 22px 70px #000, inset 0 1px #62675d;
+      border: 1px solid #3e4240;
+      border-radius: 0;
+      background: #080808;
+      box-shadow: none;
       overflow: hidden;
     }
 
@@ -57,9 +52,9 @@
       gap: 24px;
       height: 64px;
       padding: 8px 14px;
-      border-bottom: 2px solid #090b09;
-      background: linear-gradient(#30352e, #1e221d);
-      box-shadow: inset 0 -1px #555b51;
+      border-bottom: 1px solid #3e4240;
+      background: #060606;
+      box-shadow: none;
     }
 
     .eyebrow,
@@ -73,16 +68,16 @@
     }
 
     .eyebrow {
-      color: #8d9487;
+      color: #7b817d;
       font-size: 0.66rem;
     }
 
     h1 {
       margin: 3px 0 0;
-      color: #e1e0d3;
-      font-family: Impact, "Arial Narrow", sans-serif;
+      color: #e7e9e7;
+      font-family: inherit;
       font-size: clamp(1.3rem, 2.4vw, 2rem);
-      font-weight: 400;
+      font-weight: 700;
       letter-spacing: 0.09em;
     }
 
@@ -98,35 +93,35 @@
       border: 1px solid #57491f;
       border-radius: 2px;
       color: var(--amber);
-      background: #211c0c;
-      box-shadow: inset 0 0 12px rgba(244, 182, 66, 0.08);
+      background: transparent;
+      box-shadow: none;
       font-size: 0.67rem;
       font-weight: 800;
     }
 
     .annunciator.connected {
       color: var(--phosphor);
-      border-color: #236d2d;
-      background: #0a1e0e;
+      border-color: #7b817d;
+      background: transparent;
     }
 
     .annunciator.disconnected {
       color: var(--danger);
       border-color: #7a2923;
-      background: #240c0a;
+      background: transparent;
     }
 
     .mission-clock {
       min-width: 128px;
       padding: 7px 11px;
-      border: 1px solid #0b0d0a;
-      background: #050705;
-      box-shadow: inset 0 0 16px #000, 0 1px #555b51;
+      border: 1px solid #3e4240;
+      background: #020202;
+      box-shadow: none;
       text-align: right;
     }
 
     .mission-clock span {
-      color: #6f776a;
+      color: #7b817d;
       font-size: 0.62rem;
       letter-spacing: 0.12em;
     }
@@ -138,7 +133,7 @@
       font-size: 1.15rem;
       font-weight: 500;
       letter-spacing: 0.08em;
-      text-shadow: 0 0 8px rgba(60, 255, 85, 0.45);
+      text-shadow: 0 0 5px rgba(241, 243, 241, 0.25);
     }
 
     .dashboard-grid {
@@ -155,8 +150,8 @@
       min-width: 0;
       min-height: 0;
       padding: 10px;
-      border-right: 2px solid #080a08;
-      box-shadow: inset -1px 0 #484d45;
+      border-right: 1px solid #3e4240;
+      box-shadow: none;
     }
 
     .turret-panel {
@@ -171,10 +166,12 @@
       min-height: 28px;
       margin: 0 0 8px;
       padding: 5px 8px 4px;
-      border: 1px solid #0a0c09;
-      color: #e0dfd1;
-      background: #161915;
-      box-shadow: inset 0 1px #3e433b;
+      border: 0;
+      border-bottom: 1px solid #3e4240;
+      border-left: 2px solid var(--phosphor);
+      color: #d7d9d7;
+      background: transparent;
+      box-shadow: none;
       font-size: 0.78rem;
     }
 
@@ -184,7 +181,7 @@
 
     .panel-title small {
       margin-left: auto;
-      color: #697064;
+      color: #7b817d;
       font-size: 0.58rem;
     }
 
@@ -204,28 +201,15 @@
       min-width: 0;
       min-height: 0;
       padding: 8px;
-      border: 1px solid #050605;
-      border-radius: 4px;
-      background:
-        linear-gradient(135deg, rgba(255, 255, 255, 0.04), transparent 25%),
-        linear-gradient(#2e322c, #171a16);
-      box-shadow:
-        inset 0 0 0 2px #3e433b,
-        inset 0 0 18px #080a08,
-        0 3px 7px rgba(0, 0, 0, 0.75);
+      border: 1px solid #343735;
+      border-radius: 0;
+      background: #050505;
+      box-shadow: none;
+      clip-path: polygon(0 8px, 8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px));
     }
 
     .screw {
-      position: absolute;
-      z-index: 8;
-      width: 9px;
-      height: 9px;
-      border: 1px solid #080908;
-      border-radius: 50%;
-      background:
-        linear-gradient(35deg, transparent 43%, #111 44% 55%, transparent 56%),
-        radial-gradient(circle at 35% 30%, #858a80, #333730 48%, #0b0d0b 75%);
-      box-shadow: 0 1px 2px #000;
+      display: none;
     }
 
     .screw--tl { top: 7px; left: 7px; }
@@ -235,21 +219,15 @@
 
     .dial__face {
       position: relative;
-      width: min(100%, 235px, calc((100vh - 230px) / 2));
+      width: min(100%, 255px, calc((100vh - 210px) / 2));
       height: auto;
       max-width: 100%;
       margin: 0;
       aspect-ratio: 1;
-      border: 7px solid #090a09;
+      border: 1px solid #717773;
       border-radius: 50%;
-      background:
-        repeating-conic-gradient(from -1deg, rgba(225, 225, 210, 0.92) 0 1deg, transparent 1deg 7.5deg),
-        #11130f;
-      box-shadow:
-        0 0 0 2px #4c5149,
-        0 0 0 5px #171a16,
-        inset 0 0 18px #000,
-        0 5px 12px #000;
+      background: #020202;
+      box-shadow: 0 0 0 1px #252825;
       overflow: hidden;
     }
 
@@ -258,10 +236,24 @@
       position: absolute;
       inset: 9%;
       border-radius: 50%;
-      background:
-        radial-gradient(circle at 42% 32%, rgba(255, 255, 255, 0.075), transparent 33%),
-        radial-gradient(circle, #1b1e19, #090b09 76%);
-      box-shadow: 0 0 0 1px #242820;
+      background: #050505;
+      box-shadow: 0 0 0 1px #2d302e;
+    }
+
+    .dial__face::after {
+      content: "";
+      position: absolute;
+      z-index: 1;
+      inset: 12px;
+      border-radius: 50%;
+      background: repeating-conic-gradient(
+        from -1deg,
+        rgba(241, 243, 241, 0.82) 0 0.8deg,
+        transparent 0.8deg 7.5deg
+      );
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 18px), #000 calc(100% - 17px));
+      mask: radial-gradient(farthest-side, transparent calc(100% - 18px), #000 calc(100% - 17px));
+      pointer-events: none;
     }
 
     .dial__name {
@@ -271,7 +263,7 @@
       left: 50%;
       width: 70%;
       transform: translateX(-50%);
-      color: #bfc0b2;
+      color: var(--phosphor);
       font-size: clamp(0.55rem, 0.7vw, 0.72rem);
       font-weight: 800;
       text-align: center;
@@ -283,7 +275,7 @@
       top: 36%;
       left: 50%;
       transform: translateX(-50%);
-      color: #6f756b;
+      color: #7b817d;
       font-size: 0.48rem;
       white-space: nowrap;
     }
@@ -291,13 +283,13 @@
     .dial__needle {
       position: absolute;
       z-index: 5;
-      left: calc(50% - 2px);
+      left: calc(50% - 1px);
       bottom: 50%;
-      width: 4px;
+      width: 2px;
       height: 38%;
-      border-radius: 80% 80% 20% 20%;
-      background: linear-gradient(90deg, #77786e, #f3f1df 42% 68%, #77786e);
-      box-shadow: 1px 1px 3px #000;
+      border-radius: 0;
+      background: var(--amber);
+      box-shadow: 0 0 5px rgba(244, 182, 66, 0.45);
       transform: rotate(var(--needle-angle, -140deg));
       transform-origin: 50% 100%;
       transition: transform 140ms linear;
@@ -311,7 +303,7 @@
       width: 8px;
       height: 15px;
       clip-path: polygon(50% 0, 100% 100%, 0 100%);
-      background: #efeedb;
+      background: var(--amber);
     }
 
     .dial__hub {
@@ -319,13 +311,13 @@
       z-index: 6;
       top: 50%;
       left: 50%;
-      width: 18px;
-      height: 18px;
+      width: 10px;
+      height: 10px;
       transform: translate(-50%, -50%);
-      border: 2px solid #050605;
+      border: 1px solid var(--amber);
       border-radius: 50%;
-      background: radial-gradient(circle at 35% 30%, #c7c7bb, #55584f 45%, #171915 70%);
-      box-shadow: 0 2px 4px #000;
+      background: #050505;
+      box-shadow: 0 0 4px rgba(244, 182, 66, 0.35);
     }
 
     .dial__readout {
@@ -333,26 +325,27 @@
       z-index: 4;
       bottom: 20%;
       left: 50%;
-      min-width: 68px;
+      min-width: min(52%, 112px);
       padding: 3px 5px 2px;
       transform: translateX(-50%);
-      border: 1px solid #494d45;
-      color: #e8e7d7;
-      background: #050605;
-      box-shadow: inset 0 0 6px #000;
+      border: 1px solid #686e6a;
+      color: var(--phosphor);
+      background: #020202;
+      box-shadow: none;
       font-size: clamp(0.72rem, 1vw, 1rem);
       line-height: 1;
-      text-align: right;
+      text-align: center;
+      white-space: nowrap;
     }
 
     .scale-mark {
       position: absolute;
       z-index: 3;
       color: var(--ivory);
-      font-family: Arial, sans-serif;
+      font-family: inherit;
       font-size: clamp(0.62rem, 1vw, 0.92rem);
       font-weight: 700;
-      text-shadow: 1px 1px #000;
+      text-shadow: 0 0 4px rgba(241, 243, 241, 0.18);
     }
 
     .mark--nw { top: 20%; left: 18%; }
@@ -370,16 +363,16 @@
       gap: 6px;
       margin-top: 8px;
       padding: 6px;
-      border: 1px solid #080a08;
-      background: #11140f;
-      box-shadow: inset 0 0 16px #050605, 0 1px #464b43;
+      border: 1px solid #3e4240;
+      background: #030303;
+      box-shadow: none;
     }
 
     .readout {
       min-width: 0;
       padding: 6px;
-      border-left: 2px solid #363b34;
-      background: #090b08;
+      border-left: 1px solid #3e4240;
+      background: transparent;
     }
 
     .readout:first-child {
@@ -388,7 +381,7 @@
 
     .readout__label {
       display: block;
-      color: #687064;
+      color: #7b817d;
       font-size: 0.55rem;
     }
 
@@ -400,31 +393,28 @@
       font-size: clamp(0.72rem, 1vw, 1rem);
       font-weight: 500;
       text-overflow: ellipsis;
-      text-shadow: 0 0 7px rgba(60, 255, 85, 0.36);
+      text-shadow: 0 0 5px rgba(241, 243, 241, 0.2);
       white-space: nowrap;
     }
 
     .tactical-panel {
       display: flex;
       flex-direction: column;
-      background: #171b16;
+      background: #050505;
     }
 
     .viewport {
       position: relative;
       flex: 1;
       min-height: 0;
-      border: 10px solid #292e28;
-      outline: 1px solid #070807;
+      border: 1px solid #717773;
+      outline: 0;
       background:
-        linear-gradient(rgba(40, 255, 65, 0.035) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(40, 255, 65, 0.035) 1px, transparent 1px),
-        radial-gradient(circle at center, #0b130c, #020402 78%);
+        linear-gradient(rgba(241, 243, 241, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(241, 243, 241, 0.045) 1px, transparent 1px),
+        #020202;
       background-size: 44px 44px, 44px 44px, auto;
-      box-shadow:
-        inset 0 0 55px #000,
-        inset 0 0 0 1px #1e6d2a,
-        0 4px 12px #000;
+      box-shadow: inset 0 0 0 1px #202321;
     }
 
     .viewport::before,
@@ -475,7 +465,7 @@
 
     .system-note {
       margin: 8px 4px 0;
-      color: #686f64;
+      color: #747a76;
       font-size: 0.62rem;
       letter-spacing: 0.08em;
       line-height: 1.5;
@@ -514,8 +504,8 @@
       .system-panel,
       .tactical-panel {
         border-right: 0;
-        border-bottom: 2px solid #080a08;
-        box-shadow: inset 0 -1px #484d45;
+        border-bottom: 2px solid #080808;
+        box-shadow: inset 0 -1px #484b49;
       }
 
       .viewport {
@@ -738,15 +728,15 @@
 
     function updateTelemetry(telemetry) {
       document.getElementById("elapsed_s").textContent = fixed(telemetry.elapsed_s, " s");
-      document.getElementById("altitude_m").textContent = fixed(telemetry.altitude_m);
-      document.getElementById("speed_m_s").textContent = fixed(telemetry.speed_m_s);
-      document.getElementById("vertical_speed_m_s").textContent = fixed(telemetry.vertical_speed_m_s);
+      document.getElementById("altitude_m").textContent = fixed(telemetry.altitude_m, " m");
+      document.getElementById("speed_m_s").textContent = fixed(telemetry.speed_m_s, " m/s");
+      document.getElementById("vertical_speed_m_s").textContent = fixed(telemetry.vertical_speed_m_s, " m/s");
       document.getElementById("heading_deg").textContent = fixed(telemetry.heading_deg, "°");
       document.getElementById("horizontal_speed_m_s").textContent = fixed(telemetry.horizontal_speed_m_s, " m/s");
       document.getElementById("acceleration_m_s2").textContent = fixed(telemetry.acceleration_m_s2, " m/s²");
       document.getElementById("yaw_deg").textContent = fixed(telemetry.yaw_deg, "°");
       document.getElementById("tilt_deg").textContent = fixed(telemetry.tilt_deg, "°");
-      document.getElementById("distance_m").textContent = fixed(telemetry.distance_m);
+      document.getElementById("distance_m").textContent = fixed(telemetry.distance_m, " m");
       document.getElementById("gps_fix").textContent = `${telemetry.gps_fix}D FIX`;
       document.getElementById("satellites").textContent = `${telemetry.satellites} TRACKED`;
       document.getElementById("satellite_signal").textContent =
