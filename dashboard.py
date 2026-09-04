@@ -19,7 +19,7 @@ from fastapi.responses import FileResponse
 HOST = "127.0.0.1"
 PORT = 8000
 UPDATE_HZ = 10
-PLAYBACK_SPEED = 8.0
+PLAYBACK_SPEED = 1.0
 WEB_DIR = Path(__file__).parent / "web"
 
 # Smoothed key points based on the TeleMega flight in the comparison workbook.
