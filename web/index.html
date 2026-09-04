@@ -494,19 +494,132 @@
       margin-top: 8px;
     }
 
-    .turret-instruments {
+    .turret-layout {
+      display: grid;
+      flex: 1;
+      grid-template-rows: minmax(0, 0.72fr) minmax(0, 1.28fr);
+      min-height: 0;
+      gap: 8px;
+    }
+
+    .turret-top {
+      display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      grid-template-rows: repeat(2, minmax(0, 1fr));
+      min-height: 0;
+      gap: 8px;
     }
 
-    .turret-instruments .instrument {
-      max-width: 280px;
+    .turret-top .instrument {
       width: 100%;
-      margin: auto;
+      height: 100%;
     }
 
-    #range-dial {
-      grid-column: 1 / -1;
+    .turret-top .dial__face {
+      width: min(100%, 180px, calc((100vh - 300px) / 2));
+    }
+
+    .radar-scope {
+      position: relative;
+      display: flex;
+      min-width: 0;
+      min-height: 0;
+      border: 1px solid #717773;
+      background: #020202;
+      clip-path: polygon(0 10px, 10px 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+      overflow: hidden;
+    }
+
+    .radar-header {
+      position: absolute;
+      z-index: 3;
+      top: 10px;
+      right: 12px;
+      left: 12px;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .radar-label {
+      color: #7b817d;
+      font-size: clamp(0.55rem, 0.7vw, 0.7rem);
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .radar-value {
+      color: var(--phosphor);
+      font-size: clamp(1rem, 1.5vw, 1.35rem);
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .radar-display {
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+    }
+
+    .radar-sector {
+      fill: rgba(241, 243, 241, 0.025);
+      stroke: #717773;
+      stroke-width: 1.5;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .radar-arc,
+    .radar-boundary,
+    .radar-zero {
+      fill: none;
+      stroke: #59605c;
+      stroke-width: 1;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .radar-arc {
+      stroke-dasharray: 3 6;
+    }
+
+    .radar-zero {
+      stroke-dasharray: 7 7;
+    }
+
+    .radar-azimuth {
+      stroke: var(--amber);
+      stroke-width: 2;
+      filter: drop-shadow(0 0 3px rgba(244, 182, 66, 0.45));
+      transform-box: view-box;
+      transform-origin: 50% 47.5%;
+      transition: transform 140ms linear;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .radar-origin {
+      fill: #020202;
+      stroke: var(--amber);
+      stroke-width: 2;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .radar-limit-text {
+      fill: #a7aca9;
+      font-family: inherit;
+      font-size: 15px;
+      letter-spacing: 0.08em;
+    }
+
+    .radar-sweep-text {
+      position: absolute;
+      right: 12px;
+      bottom: 9px;
+      color: #7b817d;
+      font-size: 0.58rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
     }
 
     .system-note {
@@ -573,14 +686,10 @@
         justify-content: flex-start;
       }
 
-      .turret-instruments {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
     }
 
     @media (max-width: 480px) {
-      .instrument-grid,
-      .turret-instruments {
+      .instrument-grid {
         grid-template-columns: 1fr;
       }
 
@@ -695,45 +804,54 @@
           <small>Line of sight</small>
         </h2>
 
-        <div class="instrument-grid turret-instruments">
-          <div class="instrument" id="azimuth-dial">
-            <i class="screw screw--tl"></i><i class="screw screw--tr"></i>
-            <i class="screw screw--bl"></i><i class="screw screw--br"></i>
-            <div class="dial__face">
-              <span class="dial__name">Turret azimuth</span>
-              <span class="dial__unit">relative to launch zero</span>
-              <span class="scale-mark mark--n">0</span><span class="scale-mark mark--e">R</span>
-              <span class="scale-mark mark--s">180</span><span class="scale-mark mark--w">L</span>
-              <div class="dial__needle"></div><div class="dial__hub"></div>
-              <output class="dial__readout" id="yaw_deg">0.0°</output>
+        <div class="turret-layout">
+          <div class="turret-top">
+            <div class="instrument" id="elevation-dial">
+              <i class="screw screw--tl"></i><i class="screw screw--tr"></i>
+              <i class="screw screw--bl"></i><i class="screw screw--br"></i>
+              <div class="dial__face">
+                <span class="dial__name">Turret elevation</span>
+                <span class="dial__unit">line-of-sight angle</span>
+                <span class="scale-mark mark--nw">0</span><span class="scale-mark mark--n">30</span>
+                <span class="scale-mark mark--ne">60</span><span class="scale-mark mark--se">90</span>
+                <div class="dial__needle"></div><div class="dial__hub"></div>
+                <output class="dial__readout" id="tilt_deg">0.0°</output>
+              </div>
+            </div>
+
+            <div class="instrument" id="range-dial">
+              <i class="screw screw--tl"></i><i class="screw screw--tr"></i>
+              <i class="screw screw--bl"></i><i class="screw screw--br"></i>
+              <div class="dial__face">
+                <span class="dial__name">Target range</span>
+                <span class="dial__unit">turret to rocket · m</span>
+                <span class="scale-mark mark--nw">0</span><span class="scale-mark mark--n">0.5</span>
+                <span class="scale-mark mark--ne">1.0</span><span class="scale-mark mark--se">1.5</span>
+                <span class="scale-mark mark--s">2.0</span><span class="scale-mark mark--sw">×1000</span>
+                <div class="dial__needle"></div><div class="dial__hub"></div>
+                <output class="dial__readout" id="distance_m">0.0</output>
+              </div>
             </div>
           </div>
 
-          <div class="instrument" id="elevation-dial">
-            <i class="screw screw--tl"></i><i class="screw screw--tr"></i>
-            <i class="screw screw--bl"></i><i class="screw screw--br"></i>
-            <div class="dial__face">
-              <span class="dial__name">Turret elevation</span>
-              <span class="dial__unit">line-of-sight angle</span>
-              <span class="scale-mark mark--nw">0</span><span class="scale-mark mark--n">30</span>
-              <span class="scale-mark mark--ne">60</span><span class="scale-mark mark--se">90</span>
-              <div class="dial__needle"></div><div class="dial__hub"></div>
-              <output class="dial__readout" id="tilt_deg">0.0°</output>
+          <div class="radar-scope">
+            <div class="radar-header">
+              <span class="radar-label">Turret azimuth</span>
+              <output class="radar-value" id="yaw_deg">0.0°</output>
             </div>
-          </div>
-
-          <div class="instrument" id="range-dial">
-            <i class="screw screw--tl"></i><i class="screw screw--tr"></i>
-            <i class="screw screw--bl"></i><i class="screw screw--br"></i>
-            <div class="dial__face">
-              <span class="dial__name">Target range</span>
-              <span class="dial__unit">turret to rocket · m</span>
-              <span class="scale-mark mark--nw">0</span><span class="scale-mark mark--n">0.5</span>
-              <span class="scale-mark mark--ne">1.0</span><span class="scale-mark mark--se">1.5</span>
-              <span class="scale-mark mark--s">2.0</span><span class="scale-mark mark--sw">×1000</span>
-              <div class="dial__needle"></div><div class="dial__hub"></div>
-              <output class="dial__readout" id="distance_m">0.0</output>
-            </div>
+            <svg class="radar-display" viewBox="0 0 400 400" role="img" aria-label="Turret mechanical azimuth sector and current pointing direction">
+              <path class="radar-sector" id="radar-sector"></path>
+              <g id="radar-range-arcs"></g>
+              <line class="radar-boundary" id="radar-min-boundary" x1="200" y1="190"></line>
+              <line class="radar-boundary" id="radar-max-boundary" x1="200" y1="190"></line>
+              <line class="radar-zero" x1="200" y1="190" x2="200" y2="25"></line>
+              <line class="radar-azimuth" id="radar-azimuth" x1="200" y1="190" x2="200" y2="25"></line>
+              <circle class="radar-origin" cx="200" cy="190" r="5"></circle>
+              <text class="radar-limit-text" id="radar-min-label"></text>
+              <text class="radar-limit-text" id="radar-max-label"></text>
+              <text class="radar-limit-text" x="207" y="20">0° FRONT</text>
+            </svg>
+            <span class="radar-sweep-text">Mechanical sweep · 270°</span>
           </div>
         </div>
 
@@ -749,10 +867,19 @@
       "altitude-dial": [0, 8000, -140, 280],
       "speed-dial": [0, 700, -140, 280],
       "heading-dial": [-180, 180, -180, 360],
-      "azimuth-dial": [-180, 180, -180, 360],
       "elevation-dial": [0, 90, -120, 240],
       "range-dial": [0, 2000, -140, 280],
     };
+
+    // Copied from antenna_controller.ino. These are intentionally not sampled
+    // from the telemetry stream or inferred from the simulated values.
+    const TURRET_AZ_MIN_DEG = 0;
+    const TURRET_AZ_MAX_DEG = 270;
+    const TURRET_AZ_OFFSET_DEG = 110;
+    const TURRET_AZ_DIRECTION = 1;
+    const RADAR_CENTER = { x: 200, y: 190 };
+    const RADAR_RADIUS = 165;
+    const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
     function setDial(id, value) {
       const [minimum, maximum, start, sweep] = dialRanges[id];
@@ -767,6 +894,77 @@
       return `${Number(value).toFixed(1)}${unit}`;
     }
 
+    function radarPoint(angle, radius = RADAR_RADIUS) {
+      const radians = angle * Math.PI / 180;
+      return {
+        x: RADAR_CENTER.x + Math.sin(radians) * radius,
+        y: RADAR_CENTER.y - Math.cos(radians) * radius,
+      };
+    }
+
+    function radarArcPath(radius, minimumYaw, maximumYaw) {
+      const start = radarPoint(minimumYaw, radius);
+      const end = radarPoint(maximumYaw, radius);
+      const largeArc = maximumYaw - minimumYaw > 180 ? 1 : 0;
+      return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArc} 1 ${end.x} ${end.y}`;
+    }
+
+    function turretYawLimits() {
+      const first = (TURRET_AZ_MIN_DEG - TURRET_AZ_OFFSET_DEG) / TURRET_AZ_DIRECTION;
+      const second = (TURRET_AZ_MAX_DEG - TURRET_AZ_OFFSET_DEG) / TURRET_AZ_DIRECTION;
+      return [Math.min(first, second), Math.max(first, second)];
+    }
+
+    function setBoundary(id, point) {
+      const line = document.getElementById(id);
+      line.setAttribute("x2", point.x);
+      line.setAttribute("y2", point.y);
+    }
+
+    function placeLimitLabel(id, angle, suffix) {
+      const label = document.getElementById(id);
+      const point = radarPoint(angle, RADAR_RADIUS - 4);
+      label.setAttribute("x", point.x + (point.x < RADAR_CENTER.x ? 8 : -8));
+      label.setAttribute("y", point.y + (point.y < RADAR_CENTER.y ? -8 : 20));
+      label.setAttribute("text-anchor", point.x < RADAR_CENTER.x ? "start" : "end");
+      label.textContent = `${angle}° ${suffix}`;
+    }
+
+    function configureRadar() {
+      const [minimumYaw, maximumYaw] = turretYawLimits();
+      const start = radarPoint(minimumYaw);
+      const end = radarPoint(maximumYaw);
+      const largeArc = maximumYaw - minimumYaw > 180 ? 1 : 0;
+
+      document.getElementById("radar-sector").setAttribute(
+        "d",
+        `M ${RADAR_CENTER.x} ${RADAR_CENTER.y} L ${start.x} ${start.y} ` +
+        `A ${RADAR_RADIUS} ${RADAR_RADIUS} 0 ${largeArc} 1 ${end.x} ${end.y} Z`,
+      );
+      setBoundary("radar-min-boundary", start);
+      setBoundary("radar-max-boundary", end);
+      placeLimitLabel("radar-min-label", minimumYaw, "MIN");
+      placeLimitLabel("radar-max-label", maximumYaw, "MAX");
+
+      const arcs = document.getElementById("radar-range-arcs");
+      for (const radius of [55, 110]) {
+        const path = document.createElementNS(SVG_NAMESPACE, "path");
+        path.setAttribute("class", "radar-arc");
+        path.setAttribute("d", radarArcPath(radius, minimumYaw, maximumYaw));
+        arcs.appendChild(path);
+      }
+    }
+
+    function setRadarAzimuth(yaw) {
+      const physicalAngle = Math.max(
+        TURRET_AZ_MIN_DEG,
+        Math.min(TURRET_AZ_MAX_DEG, TURRET_AZ_OFFSET_DEG + TURRET_AZ_DIRECTION * yaw),
+      );
+      const constrainedYaw = (physicalAngle - TURRET_AZ_OFFSET_DEG) / TURRET_AZ_DIRECTION;
+      document.getElementById("radar-azimuth").style.transform = `rotate(${constrainedYaw}deg)`;
+      return constrainedYaw;
+    }
+
     function updateTelemetry(telemetry) {
       document.getElementById("elapsed_s").textContent = fixed(telemetry.elapsed_s, " s");
       document.getElementById("altitude_m").textContent = fixed(telemetry.altitude_m, " m");
@@ -775,7 +973,7 @@
       document.getElementById("heading_deg").textContent = fixed(telemetry.heading_deg, "°");
       document.getElementById("horizontal_speed_m_s").textContent = fixed(telemetry.horizontal_speed_m_s, " m/s");
       document.getElementById("acceleration_m_s2").textContent = fixed(telemetry.acceleration_m_s2, " m/s²");
-      document.getElementById("yaw_deg").textContent = fixed(telemetry.yaw_deg, "°");
+      document.getElementById("yaw_deg").textContent = fixed(setRadarAzimuth(telemetry.yaw_deg), "°");
       document.getElementById("tilt_deg").textContent = fixed(telemetry.tilt_deg, "°");
       document.getElementById("distance_m").textContent = fixed(telemetry.distance_m, " m");
       document.getElementById("gps_fix").textContent = `${telemetry.gps_fix}D FIX`;
@@ -789,7 +987,6 @@
       setDial("altitude-dial", telemetry.altitude_m);
       setDial("speed-dial", telemetry.speed_m_s);
       setDial("heading-dial", telemetry.heading_deg);
-      setDial("azimuth-dial", telemetry.yaw_deg);
       setDial("elevation-dial", telemetry.tilt_deg);
       setDial("range-dial", telemetry.distance_m);
     }
@@ -813,6 +1010,7 @@
       };
     }
 
+    configureRadar();
     connect();
   </script>
 </body>
