@@ -136,6 +136,14 @@
       text-shadow: 0 0 5px rgba(241, 243, 241, 0.25);
     }
 
+    .mission-clock strong,
+    .dial__readout,
+    .velocity-card__value,
+    .readout__value {
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum" 1;
+    }
+
     .dashboard-grid {
       display: grid;
       grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 0.78fr);
@@ -206,6 +214,43 @@
       background: #050505;
       box-shadow: none;
       clip-path: polygon(0 8px, 8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px));
+    }
+
+    .velocity-stack {
+      display: grid;
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+      min-width: 0;
+      min-height: 0;
+      gap: 8px;
+    }
+
+    .velocity-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 0;
+      padding: clamp(10px, 1.5vw, 22px);
+      border: 1px solid #717773;
+      background: #030303;
+      clip-path: polygon(0 8px, 8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+    }
+
+    .velocity-card__label {
+      color: #7b817d;
+      font-size: clamp(0.55rem, 0.7vw, 0.72rem);
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .velocity-card__value {
+      margin-top: 8px;
+      color: var(--phosphor);
+      font-size: clamp(1.15rem, 2vw, 2rem);
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-align: right;
+      white-space: nowrap;
     }
 
     .screw {
@@ -325,7 +370,7 @@
       z-index: 4;
       bottom: 20%;
       left: 50%;
-      min-width: min(52%, 112px);
+      width: min(58%, 124px);
       padding: 3px 5px 2px;
       transform: translateX(-50%);
       border: 1px solid #686e6a;
@@ -334,7 +379,7 @@
       box-shadow: none;
       font-size: clamp(0.72rem, 1vw, 1rem);
       line-height: 1;
-      text-align: center;
+      text-align: right;
       white-space: nowrap;
     }
 
@@ -394,6 +439,7 @@
       font-weight: 500;
       text-overflow: ellipsis;
       text-shadow: 0 0 5px rgba(241, 243, 241, 0.2);
+      text-align: right;
       white-space: nowrap;
     }
 
@@ -583,6 +629,19 @@
             </div>
           </div>
 
+          <div class="instrument" id="heading-dial">
+            <i class="screw screw--tl"></i><i class="screw screw--tr"></i>
+            <i class="screw screw--bl"></i><i class="screw screw--br"></i>
+            <div class="dial__face">
+              <span class="dial__name">Rocket heading</span>
+              <span class="dial__unit">direction of travel</span>
+              <span class="scale-mark mark--n">N</span><span class="scale-mark mark--e">E</span>
+              <span class="scale-mark mark--s">S</span><span class="scale-mark mark--w">W</span>
+              <div class="dial__needle"></div><div class="dial__hub"></div>
+              <output class="dial__readout" id="heading_deg">0.0°</output>
+            </div>
+          </div>
+
           <div class="instrument" id="speed-dial">
             <i class="screw screw--tl"></i><i class="screw screw--tr"></i>
             <i class="screw screw--bl"></i><i class="screw screw--br"></i>
@@ -597,36 +656,19 @@
             </div>
           </div>
 
-          <div class="instrument" id="vertical-speed-dial">
-            <i class="screw screw--tl"></i><i class="screw screw--tr"></i>
-            <i class="screw screw--bl"></i><i class="screw screw--br"></i>
-            <div class="dial__face">
-              <span class="dial__name">Vertical speed</span>
-              <span class="dial__unit">rocket · m/s</span>
-              <span class="scale-mark mark--nw">-100</span><span class="scale-mark mark--n">0</span>
-              <span class="scale-mark mark--ne">200</span><span class="scale-mark mark--se">400</span>
-              <span class="scale-mark mark--s">600</span><span class="scale-mark mark--sw">700</span>
-              <div class="dial__needle"></div><div class="dial__hub"></div>
-              <output class="dial__readout" id="vertical_speed_m_s">0.0</output>
+          <div class="velocity-stack">
+            <div class="velocity-card">
+              <span class="velocity-card__label">Rocket vertical speed</span>
+              <output class="velocity-card__value" id="vertical_speed_m_s">0.0 m/s</output>
             </div>
-          </div>
-
-          <div class="instrument" id="heading-dial">
-            <i class="screw screw--tl"></i><i class="screw screw--tr"></i>
-            <i class="screw screw--bl"></i><i class="screw screw--br"></i>
-            <div class="dial__face">
-              <span class="dial__name">Rocket heading</span>
-              <span class="dial__unit">direction of travel</span>
-              <span class="scale-mark mark--n">N</span><span class="scale-mark mark--e">E</span>
-              <span class="scale-mark mark--s">S</span><span class="scale-mark mark--w">W</span>
-              <div class="dial__needle"></div><div class="dial__hub"></div>
-              <output class="dial__readout" id="heading_deg">0.0°</output>
+            <div class="velocity-card">
+              <span class="velocity-card__label">Rocket horizontal speed</span>
+              <output class="velocity-card__value" id="horizontal_speed_m_s">0.0 m/s</output>
             </div>
           </div>
         </div>
 
         <div class="digital-bank">
-          <div class="readout"><span class="readout__label">Horizontal speed</span><strong class="readout__value" id="horizontal_speed_m_s">0.0 m/s</strong></div>
           <div class="readout"><span class="readout__label">Vertical acceleration</span><strong class="readout__value" id="acceleration_m_s2">0.0 m/s²</strong></div>
           <div class="readout"><span class="readout__label">GPS fix</span><strong class="readout__value" id="gps_fix">—</strong></div>
           <div class="readout"><span class="readout__label">Satellites</span><strong class="readout__value" id="satellites">—</strong></div>
@@ -706,7 +748,6 @@
     const dialRanges = {
       "altitude-dial": [0, 8000, -140, 280],
       "speed-dial": [0, 700, -140, 280],
-      "vertical-speed-dial": [-100, 700, -140, 280],
       "heading-dial": [-180, 180, -180, 360],
       "azimuth-dial": [-180, 180, -180, 360],
       "elevation-dial": [0, 90, -120, 240],
@@ -747,7 +788,6 @@
 
       setDial("altitude-dial", telemetry.altitude_m);
       setDial("speed-dial", telemetry.speed_m_s);
-      setDial("vertical-speed-dial", telemetry.vertical_speed_m_s);
       setDial("heading-dial", telemetry.heading_deg);
       setDial("azimuth-dial", telemetry.yaw_deg);
       setDial("elevation-dial", telemetry.tilt_deg);
