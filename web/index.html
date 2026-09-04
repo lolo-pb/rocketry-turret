@@ -84,14 +84,17 @@
 
   <div class="status">
     <span id="connection" class="disconnected">Disconnected</span>
-    <span>Flight state: <strong id="flight_state">—</strong></span>
+    <span>Tracker: <strong id="tracker">—</strong></span>
   </div>
 
   <main class="grid">
     <div class="card"><div class="label">Elapsed</div><div class="value" id="elapsed_s">—</div></div>
     <div class="card"><div class="label">Altitude</div><div class="value" id="altitude_m">—</div></div>
+    <div class="card"><div class="label">Horizontal speed</div><div class="value" id="horizontal_speed_m_s">—</div></div>
+    <div class="card"><div class="label">Heading</div><div class="value" id="heading_deg">—</div></div>
     <div class="card"><div class="label">Vertical speed</div><div class="value" id="vertical_speed_m_s">—</div></div>
-    <div class="card"><div class="label">Acceleration</div><div class="value" id="acceleration_m_s2">—</div></div>
+    <div class="card"><div class="label">Total speed</div><div class="value" id="speed_m_s">—</div></div>
+    <div class="card"><div class="label">Vertical acceleration</div><div class="value" id="acceleration_m_s2">—</div></div>
     <div class="card"><div class="label">Yaw</div><div class="value" id="yaw_deg">—</div></div>
     <div class="card"><div class="label">Tilt</div><div class="value" id="tilt_deg">—</div></div>
     <div class="card"><div class="label">Distance</div><div class="value" id="distance_m">—</div></div>
@@ -104,7 +107,10 @@
     const fields = {
       elapsed_s: ["elapsed_s", " s"],
       altitude_m: ["altitude_m", " m"],
+      horizontal_speed_m_s: ["horizontal_speed_m_s", " m/s"],
+      heading_deg: ["heading_deg", "°"],
       vertical_speed_m_s: ["vertical_speed_m_s", " m/s"],
+      speed_m_s: ["speed_m_s", " m/s"],
       acceleration_m_s2: ["acceleration_m_s2", " m/s²"],
       yaw_deg: ["yaw_deg", "°"],
       tilt_deg: ["tilt_deg", "°"],
@@ -123,12 +129,16 @@
 
       socket.onmessage = (event) => {
         const telemetry = JSON.parse(event.data);
-        document.getElementById("flight_state").textContent = telemetry.flight_state.toUpperCase();
+        document.getElementById("tracker").textContent = `${telemetry.packet_type} · ${telemetry.tracker_id}`;
         for (const [elementId, [key, unit]] of Object.entries(fields)) {
           document.getElementById(elementId).textContent = `${telemetry[key]}${unit}`;
         }
         const crc = telemetry.crc_ok ? "CRC OK" : "CRC ERROR";
-        document.getElementById("gps").textContent = `${telemetry.satellites} sats · fix ${telemetry.gps_fix} · ${crc}`;
+        document.getElementById("gps").textContent =
+          `${telemetry.gps_fix}D · ${telemetry.satellites} sats · ${crc}`;
+        document.getElementById("gps").title =
+          `Signal counts: ≥24 dB ${telemetry.satellites_24db}, ` +
+          `≥32 dB ${telemetry.satellites_32db}, ≥40 dB ${telemetry.satellites_40db}`;
       };
 
       socket.onclose = () => {

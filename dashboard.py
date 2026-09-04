@@ -2,6 +2,7 @@
 
 import asyncio
 import contextlib
+import math
 import threading
 import time
 import urllib.error
@@ -24,18 +25,19 @@ WEB_DIR = Path(__file__).parent / "web"
 # Smoothed key points based on the TeleMega flight in the comparison workbook.
 # The final 16 simulated seconds keep the rocket landed for a two-second pause.
 KEYFRAMES = [
-    # time, state, altitude, vertical speed, acceleration, yaw, tilt, distance, satellites
-    (0.0, "boost", 0.0, 0.0, 138.0, 0.0, 0.0, 0.0, 14),
-    (3.5, "boost", 748.0, 622.0, 0.0, -8.0, 18.0, 15.0, 10),
-    (3.64, "fast", 822.0, 620.0, -23.0, -8.0, 18.0, 15.0, 10),
-    (16.29, "coast", 5388.0, 215.0, -14.0, -25.0, 55.0, 850.0, 8),
-    (36.97, "drogue", 7480.0, 0.0, -10.0, -47.0, 80.0, 1806.0, 12),
-    (40.5, "drogue", 7538.0, -14.0, -10.0, -47.0, 80.0, 1806.0, 12),
-    (180.0, "drogue", 1800.0, -61.0, 0.0, -36.0, 48.0, 1600.0, 14),
-    (241.02, "main", 254.0, -27.0, 0.0, -20.0, 18.0, 1750.0, 15),
-    (247.78, "main", 29.0, -12.0, 0.0, -18.0, 5.0, 1780.0, 15),
-    (250.0, "landed", 0.0, 0.0, 0.0, -18.0, 0.0, 1780.0, 15),
-    (266.4, "landed", 0.0, 0.0, 0.0, -18.0, 0.0, 1780.0, 15),
+    # time, altitude, horizontal speed, heading, vertical speed, yaw, tilt,
+    # distance, GPS fix, satellites, satellites >=24/32/40 dB
+    (   0.0,    0.0,  0.0,   0.0,   0.0,   0.0,  0.0,    0.0, 3, 14, 12, 6, 2),
+    (   3.5,  748.0,  4.3,  -8.0, 622.0,  -8.0, 18.0,   15.0, 3, 10,  8, 4, 2),
+    (  3.64,  822.0,  0.0,  -8.0, 620.0,  -8.0, 18.0,   15.0, 3, 10,  8, 4, 2),
+    (   16., 5388.0, 67.6, -25.0, 215.0, -25.0, 55.0,  850.0, 3,  8,  6, 3, 1),
+    (   36., 7480.0, 46.2, -47.0,   0.0, -47.0, 80.0, 1806.0, 3, 12, 10, 5, 2),
+    (  40.5, 7538.0,  0.0, -47.0, -14.0, -47.0, 80.0, 1806.0, 3, 12, 10, 5, 2),
+    (  180., 1800.0,  1.5, 144.0, -61.0, -36.0, 48.0, 1600.0, 3, 14, 12, 7, 3),
+    (241.02,  254.0,  2.5, -20.0, -27.0, -20.0, 18.0, 1750.0, 3, 15, 13, 8, 4),
+    (247.78,   29.0,  4.4, -18.0, -12.0, -18.0,  5.0, 1780.0, 3, 15, 13, 8, 4),
+    (250.0 ,    0.0,  0.0, -18.0,   0.0, -18.0,  0.0, 1780.0, 3, 15, 13, 8, 4),
+    (266.4 ,    0.0,  0.0, -18.0,   0.0, -18.0,  0.0, 1780.0, 3, 15, 13, 8, 4),
 ]
 
 latest_telemetry = {}
@@ -57,19 +59,30 @@ def telemetry_at(sim_time, sequence):
     def between(index):
         return left[index] + (right[index] - left[index]) * progress
 
+    horizontal_speed = between(2)
+    vertical_speed = between(4)
+    vertical_acceleration = 0.0 if span == 0 else (right[4] - left[4]) / span
+
     return {
         "source": "simulation",
         "sequence": sequence,
         "elapsed_s": round(sim_time, 2),
-        "flight_state": left[1],
-        "altitude_m": round(between(2), 1),
-        "vertical_speed_m_s": round(between(3), 1),
-        "acceleration_m_s2": round(between(4), 1),
+        "packet_type": "TRK",
+        "tracker_id": "SIMULATED",
+        "altitude_m": round(between(1), 1),
+        "horizontal_speed_m_s": round(horizontal_speed, 1),
+        "heading_deg": round(between(3), 1),
+        "vertical_speed_m_s": round(vertical_speed, 1),
+        "speed_m_s": round(math.hypot(horizontal_speed, vertical_speed), 1),
+        "acceleration_m_s2": round(vertical_acceleration, 1),
         "yaw_deg": round(between(5), 1),
         "tilt_deg": round(between(6), 1),
         "distance_m": round(between(7), 1),
-        "satellites": round(between(8)),
-        "gps_fix": 3,
+        "gps_fix": left[8],
+        "satellites": round(between(9)),
+        "satellites_24db": round(between(10)),
+        "satellites_32db": round(between(11)),
+        "satellites_40db": round(between(12)),
         "crc_ok": True,
     }
 
