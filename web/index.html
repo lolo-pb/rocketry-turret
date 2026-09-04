@@ -3,119 +3,766 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Rocketry Turret Dashboard</title>
+  <title>Rocketry Turret — Track Control</title>
   <style>
     :root {
       color-scheme: dark;
-      font-family: system-ui, sans-serif;
-      background: #0b1114;
-      color: #e5f0ec;
+      font-family: "Arial Narrow", "Roboto Condensed", ui-monospace, monospace;
+      background: #050705;
+      color: #d8d8c8;
+      --phosphor: #3cff55;
+      --phosphor-dim: #15922b;
+      --amber: #f4b642;
+      --danger: #ff584d;
+      --panel: #242822;
+      --panel-deep: #111410;
+      --edge: #4c5148;
+      --ivory: #dedecf;
     }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
     body {
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 32px 20px;
-    }
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-      margin-bottom: 24px;
-    }
-    h1 {
+      width: 100%;
+      height: 100%;
+      min-width: 320px;
       margin: 0;
-      font-size: clamp(1.5rem, 4vw, 2.4rem);
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% -10%, #2d332b 0, transparent 38%),
+        linear-gradient(115deg, transparent 48%, rgba(255, 255, 255, 0.018) 50%, transparent 52%),
+        #080a08;
     }
-    .simulation {
-      color: #ffcf66;
-      border: 1px solid #a87a1d;
-      background: #2d2411;
-      padding: 7px 11px;
-      border-radius: 6px;
-      font-weight: 700;
-      white-space: nowrap;
+
+    .cockpit {
+      width: calc(100% - 12px);
+      height: calc(100% - 12px);
+      margin: 6px auto;
+      border: 1px solid #4b5047;
+      border-radius: 5px;
+      background:
+        linear-gradient(rgba(255, 255, 255, 0.018), rgba(0, 0, 0, 0.09)),
+        #1b1f1a;
+      box-shadow: 0 22px 70px #000, inset 0 1px #62675d;
+      overflow: hidden;
     }
-    .status {
-      display: flex;
-      gap: 20px;
-      padding: 14px 16px;
-      margin-bottom: 18px;
-      background: #121b20;
-      border: 1px solid #26343b;
-      border-radius: 8px;
-    }
-    .connected { color: #63e6a6; }
-    .disconnected { color: #ff7b72; }
-    .grid {
+
+    .topbar {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
+      grid-template-columns: 1fr auto auto;
+      align-items: center;
+      gap: 24px;
+      height: 64px;
+      padding: 8px 14px;
+      border-bottom: 2px solid #090b09;
+      background: linear-gradient(#30352e, #1e221d);
+      box-shadow: inset 0 -1px #555b51;
     }
-    .card {
-      min-height: 92px;
-      padding: 16px;
-      background: #121b20;
-      border: 1px solid #26343b;
-      border-radius: 8px;
-    }
-    .label {
-      color: #92a6ae;
-      font-size: 0.78rem;
-      letter-spacing: 0.08em;
+
+    .eyebrow,
+    .panel-title,
+    .readout__label,
+    .annunciator,
+    .dial__name,
+    .dial__unit {
+      letter-spacing: 0.14em;
       text-transform: uppercase;
     }
-    .value {
-      margin-top: 9px;
-      font: 600 1.55rem ui-monospace, monospace;
+
+    .eyebrow {
+      color: #8d9487;
+      font-size: 0.66rem;
     }
-    footer {
-      color: #70858e;
-      margin-top: 20px;
-      font-size: 0.88rem;
+
+    h1 {
+      margin: 3px 0 0;
+      color: #e1e0d3;
+      font-family: Impact, "Arial Narrow", sans-serif;
+      font-size: clamp(1.3rem, 2.4vw, 2rem);
+      font-weight: 400;
+      letter-spacing: 0.09em;
+    }
+
+    .annunciators {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .annunciator {
+      padding: 7px 10px 6px;
+      border: 1px solid #57491f;
+      border-radius: 2px;
+      color: var(--amber);
+      background: #211c0c;
+      box-shadow: inset 0 0 12px rgba(244, 182, 66, 0.08);
+      font-size: 0.67rem;
+      font-weight: 800;
+    }
+
+    .annunciator.connected {
+      color: var(--phosphor);
+      border-color: #236d2d;
+      background: #0a1e0e;
+    }
+
+    .annunciator.disconnected {
+      color: var(--danger);
+      border-color: #7a2923;
+      background: #240c0a;
+    }
+
+    .mission-clock {
+      min-width: 128px;
+      padding: 7px 11px;
+      border: 1px solid #0b0d0a;
+      background: #050705;
+      box-shadow: inset 0 0 16px #000, 0 1px #555b51;
+      text-align: right;
+    }
+
+    .mission-clock span {
+      color: #6f776a;
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+    }
+
+    .mission-clock strong {
+      display: block;
+      margin-top: 2px;
+      color: var(--phosphor);
+      font-size: 1.15rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-shadow: 0 0 8px rgba(60, 255, 85, 0.45);
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 0.78fr);
+      height: calc(100% - 64px);
+      min-height: 0;
+    }
+
+    .system-panel,
+    .tactical-panel {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      padding: 10px;
+      border-right: 2px solid #080a08;
+      box-shadow: inset -1px 0 #484d45;
+    }
+
+    .turret-panel {
+      border-right: 0;
+      box-shadow: none;
+    }
+
+    .panel-title {
+      display: flex;
+      align-items: baseline;
+      gap: 9px;
+      min-height: 28px;
+      margin: 0 0 8px;
+      padding: 5px 8px 4px;
+      border: 1px solid #0a0c09;
+      color: #e0dfd1;
+      background: #161915;
+      box-shadow: inset 0 1px #3e433b;
+      font-size: 0.78rem;
+    }
+
+    .panel-title b {
+      color: var(--amber);
+    }
+
+    .panel-title small {
+      margin-left: auto;
+      color: #697064;
+      font-size: 0.58rem;
+    }
+
+    .instrument-grid {
+      display: grid;
+      flex: 1;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+      min-height: 0;
+      gap: 8px;
+    }
+
+    .instrument {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-width: 0;
+      min-height: 0;
+      padding: 8px;
+      border: 1px solid #050605;
+      border-radius: 4px;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.04), transparent 25%),
+        linear-gradient(#2e322c, #171a16);
+      box-shadow:
+        inset 0 0 0 2px #3e433b,
+        inset 0 0 18px #080a08,
+        0 3px 7px rgba(0, 0, 0, 0.75);
+    }
+
+    .screw {
+      position: absolute;
+      z-index: 8;
+      width: 9px;
+      height: 9px;
+      border: 1px solid #080908;
+      border-radius: 50%;
+      background:
+        linear-gradient(35deg, transparent 43%, #111 44% 55%, transparent 56%),
+        radial-gradient(circle at 35% 30%, #858a80, #333730 48%, #0b0d0b 75%);
+      box-shadow: 0 1px 2px #000;
+    }
+
+    .screw--tl { top: 7px; left: 7px; }
+    .screw--tr { top: 7px; right: 7px; }
+    .screw--bl { bottom: 7px; left: 7px; }
+    .screw--br { right: 7px; bottom: 7px; }
+
+    .dial__face {
+      position: relative;
+      width: min(100%, 235px, calc((100vh - 230px) / 2));
+      height: auto;
+      max-width: 100%;
+      margin: 0;
+      aspect-ratio: 1;
+      border: 7px solid #090a09;
+      border-radius: 50%;
+      background:
+        repeating-conic-gradient(from -1deg, rgba(225, 225, 210, 0.92) 0 1deg, transparent 1deg 7.5deg),
+        #11130f;
+      box-shadow:
+        0 0 0 2px #4c5149,
+        0 0 0 5px #171a16,
+        inset 0 0 18px #000,
+        0 5px 12px #000;
+      overflow: hidden;
+    }
+
+    .dial__face::before {
+      content: "";
+      position: absolute;
+      inset: 9%;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 42% 32%, rgba(255, 255, 255, 0.075), transparent 33%),
+        radial-gradient(circle, #1b1e19, #090b09 76%);
+      box-shadow: 0 0 0 1px #242820;
+    }
+
+    .dial__name {
+      position: absolute;
+      z-index: 3;
+      top: 27%;
+      left: 50%;
+      width: 70%;
+      transform: translateX(-50%);
+      color: #bfc0b2;
+      font-size: clamp(0.55rem, 0.7vw, 0.72rem);
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .dial__unit {
+      position: absolute;
+      z-index: 3;
+      top: 36%;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #6f756b;
+      font-size: 0.48rem;
+      white-space: nowrap;
+    }
+
+    .dial__needle {
+      position: absolute;
+      z-index: 5;
+      left: calc(50% - 2px);
+      bottom: 50%;
+      width: 4px;
+      height: 38%;
+      border-radius: 80% 80% 20% 20%;
+      background: linear-gradient(90deg, #77786e, #f3f1df 42% 68%, #77786e);
+      box-shadow: 1px 1px 3px #000;
+      transform: rotate(var(--needle-angle, -140deg));
+      transform-origin: 50% 100%;
+      transition: transform 140ms linear;
+    }
+
+    .dial__needle::after {
+      content: "";
+      position: absolute;
+      top: -3px;
+      left: -2px;
+      width: 8px;
+      height: 15px;
+      clip-path: polygon(50% 0, 100% 100%, 0 100%);
+      background: #efeedb;
+    }
+
+    .dial__hub {
+      position: absolute;
+      z-index: 6;
+      top: 50%;
+      left: 50%;
+      width: 18px;
+      height: 18px;
+      transform: translate(-50%, -50%);
+      border: 2px solid #050605;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #c7c7bb, #55584f 45%, #171915 70%);
+      box-shadow: 0 2px 4px #000;
+    }
+
+    .dial__readout {
+      position: absolute;
+      z-index: 4;
+      bottom: 20%;
+      left: 50%;
+      min-width: 68px;
+      padding: 3px 5px 2px;
+      transform: translateX(-50%);
+      border: 1px solid #494d45;
+      color: #e8e7d7;
+      background: #050605;
+      box-shadow: inset 0 0 6px #000;
+      font-size: clamp(0.72rem, 1vw, 1rem);
+      line-height: 1;
+      text-align: right;
+    }
+
+    .scale-mark {
+      position: absolute;
+      z-index: 3;
+      color: var(--ivory);
+      font-family: Arial, sans-serif;
+      font-size: clamp(0.62rem, 1vw, 0.92rem);
+      font-weight: 700;
+      text-shadow: 1px 1px #000;
+    }
+
+    .mark--nw { top: 20%; left: 18%; }
+    .mark--n  { top: 10%; left: 50%; transform: translateX(-50%); }
+    .mark--ne { top: 20%; right: 18%; }
+    .mark--e  { top: 50%; right: 10%; transform: translateY(-50%); }
+    .mark--se { right: 14%; bottom: 24%; }
+    .mark--s  { bottom: 11%; left: 50%; transform: translateX(-50%); }
+    .mark--sw { bottom: 24%; left: 14%; }
+    .mark--w  { top: 50%; left: 10%; transform: translateY(-50%); }
+
+    .digital-bank {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+      margin-top: 8px;
+      padding: 6px;
+      border: 1px solid #080a08;
+      background: #11140f;
+      box-shadow: inset 0 0 16px #050605, 0 1px #464b43;
+    }
+
+    .readout {
+      min-width: 0;
+      padding: 6px;
+      border-left: 2px solid #363b34;
+      background: #090b08;
+    }
+
+    .readout:first-child {
+      border-left: 0;
+    }
+
+    .readout__label {
+      display: block;
+      color: #687064;
+      font-size: 0.55rem;
+    }
+
+    .readout__value {
+      display: block;
+      margin-top: 4px;
+      overflow: hidden;
+      color: var(--phosphor);
+      font-size: clamp(0.72rem, 1vw, 1rem);
+      font-weight: 500;
+      text-overflow: ellipsis;
+      text-shadow: 0 0 7px rgba(60, 255, 85, 0.36);
+      white-space: nowrap;
+    }
+
+    .tactical-panel {
+      display: flex;
+      flex-direction: column;
+      background: #171b16;
+    }
+
+    .viewport {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      border: 10px solid #292e28;
+      outline: 1px solid #070807;
+      background:
+        linear-gradient(rgba(40, 255, 65, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(40, 255, 65, 0.035) 1px, transparent 1px),
+        radial-gradient(circle at center, #0b130c, #020402 78%);
+      background-size: 44px 44px, 44px 44px, auto;
+      box-shadow:
+        inset 0 0 55px #000,
+        inset 0 0 0 1px #1e6d2a,
+        0 4px 12px #000;
+    }
+
+    .viewport::before,
+    .viewport::after {
+      content: "";
+      position: absolute;
+      width: 48px;
+      height: 48px;
+      border-color: var(--phosphor);
+      opacity: 0.55;
+    }
+
+    .viewport::before {
+      top: 16px;
+      left: 16px;
+      border-top: 1px solid;
+      border-left: 1px solid;
+    }
+
+    .viewport::after {
+      right: 16px;
+      bottom: 16px;
+      border-right: 1px solid;
+      border-bottom: 1px solid;
+    }
+
+    .mfd-footer {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .turret-instruments {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+    }
+
+    .turret-instruments .instrument {
+      max-width: 280px;
+      width: 100%;
+      margin: auto;
+    }
+
+    #range-dial {
+      grid-column: 1 / -1;
+    }
+
+    .system-note {
+      margin: 8px 4px 0;
+      color: #686f64;
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      line-height: 1.5;
+      text-transform: uppercase;
+    }
+
+    @media (max-width: 760px) {
+      html,
+      body {
+        height: auto;
+        min-height: 100%;
+        overflow: auto;
+      }
+
+      .cockpit {
+        width: min(100% - 12px, 620px);
+        height: auto;
+        min-height: calc(100vh - 12px);
+        margin: 6px auto;
+      }
+
+      .dashboard-grid {
+        display: block;
+        height: auto;
+      }
+
+      .instrument-grid {
+        grid-template-rows: auto;
+      }
+
+      .dial__face {
+        width: 100%;
+        height: auto;
+      }
+
+      .system-panel,
+      .tactical-panel {
+        border-right: 0;
+        border-bottom: 2px solid #080a08;
+        box-shadow: inset 0 -1px #484d45;
+      }
+
+      .viewport {
+        min-height: 420px;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .topbar {
+        height: auto;
+        min-height: 64px;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+      }
+
+      .annunciators {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        justify-content: flex-start;
+      }
+
+      .turret-instruments {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 480px) {
+      .instrument-grid,
+      .turret-instruments {
+        grid-template-columns: 1fr;
+      }
+
+      .digital-bank {
+        grid-template-columns: 1fr 1fr;
+      }
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Rocketry Turret</h1>
-    <div class="simulation">SIMULATION MODE</div>
-  </header>
+  <div class="cockpit">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">Ground intercept system</div>
+        <h1>Rocketry Turret · Track Control</h1>
+      </div>
+      <div class="annunciators">
+        <span id="connection" class="annunciator disconnected">Data link offline</span>
+        <span class="annunciator">Simulation</span>
+      </div>
+      <div class="mission-clock">
+        <span>Flight time</span>
+        <strong id="elapsed_s">000.0 s</strong>
+      </div>
+    </header>
 
-  <div class="status">
-    <span id="connection" class="disconnected">Disconnected</span>
-    <span>Tracker: <strong id="tracker">—</strong></span>
+    <main class="dashboard-grid">
+      <section class="system-panel rocket-panel" aria-labelledby="rocket-title">
+        <h2 class="panel-title" id="rocket-title">
+          <b>01</b> Rocket / flight vehicle
+          <small>Motion + navigation</small>
+        </h2>
+
+        <div class="instrument-grid">
+          <div class="instrument" id="altitude-dial">
+            <i class="screw screw--tl"></i><i class="screw screw--tr"></i>
+            <i class="screw screw--bl"></i><i class="screw screw--br"></i>
+            <div class="dial__face">
+              <span class="dial__name">Rocket altitude</span>
+              <span class="dial__unit">metres ASL</span>
+              <span class="scale-mark mark--nw">0</span><span class="scale-mark mark--n">2</span>
+              <span class="scale-mark mark--ne">4</span><span class="scale-mark mark--se">6</span>
+              <span class="scale-mark mark--s">8</span><span class="scale-mark mark--sw">×1000</span>
+              <div class="dial__needle"></div><div class="dial__hub"></div>
+              <output class="dial__readout" id="altitude_m">0.0</output>
+            </div>
+          </div>
+
+          <div class="instrument" id="speed-dial">
+            <i class="screw screw--tl"></i><i class="screw screw--tr"></i>
+            <i class="screw screw--bl"></i><i class="screw screw--br"></i>
+            <div class="dial__face">
+              <span class="dial__name">Rocket speed</span>
+              <span class="dial__unit">total · m/s</span>
+              <span class="scale-mark mark--nw">0</span><span class="scale-mark mark--n">140</span>
+              <span class="scale-mark mark--ne">280</span><span class="scale-mark mark--se">420</span>
+              <span class="scale-mark mark--s">560</span><span class="scale-mark mark--sw">700</span>
+              <div class="dial__needle"></div><div class="dial__hub"></div>
+              <output class="dial__readout" id="speed_m_s">0.0</output>
+            </div>
+          </div>
+
+          <div class="instrument" id="vertical-speed-dial">
+            <i class="screw screw--tl"></i><i class="screw screw--tr"></i>
+            <i class="screw screw--bl"></i><i class="screw screw--br"></i>
+            <div class="dial__face">
+              <span class="dial__name">Vertical speed</span>
+              <span class="dial__unit">rocket · m/s</span>
+              <span class="scale-mark mark--nw">-100</span><span class="scale-mark mark--n">0</span>
+              <span class="scale-mark mark--ne">200</span><span class="scale-mark mark--se">400</span>
+              <span class="scale-mark mark--s">600</span><span class="scale-mark mark--sw">700</span>
+              <div class="dial__needle"></div><div class="dial__hub"></div>
+              <output class="dial__readout" id="vertical_speed_m_s">0.0</output>
+            </div>
+          </div>
+
+          <div class="instrument" id="heading-dial">
+            <i class="screw screw--tl"></i><i class="screw screw--tr"></i>
+            <i class="screw screw--bl"></i><i class="screw screw--br"></i>
+            <div class="dial__face">
+              <span class="dial__name">Rocket heading</span>
+              <span class="dial__unit">direction of travel</span>
+              <span class="scale-mark mark--n">N</span><span class="scale-mark mark--e">E</span>
+              <span class="scale-mark mark--s">S</span><span class="scale-mark mark--w">W</span>
+              <div class="dial__needle"></div><div class="dial__hub"></div>
+              <output class="dial__readout" id="heading_deg">0.0°</output>
+            </div>
+          </div>
+        </div>
+
+        <div class="digital-bank">
+          <div class="readout"><span class="readout__label">Horizontal speed</span><strong class="readout__value" id="horizontal_speed_m_s">0.0 m/s</strong></div>
+          <div class="readout"><span class="readout__label">Vertical acceleration</span><strong class="readout__value" id="acceleration_m_s2">0.0 m/s²</strong></div>
+          <div class="readout"><span class="readout__label">GPS fix</span><strong class="readout__value" id="gps_fix">—</strong></div>
+          <div class="readout"><span class="readout__label">Satellites</span><strong class="readout__value" id="satellites">—</strong></div>
+          <div class="readout"><span class="readout__label">Signal bands</span><strong class="readout__value" id="satellite_signal">—</strong></div>
+          <div class="readout"><span class="readout__label">Packet integrity</span><strong class="readout__value" id="crc_status">—</strong></div>
+        </div>
+      </section>
+
+      <section class="tactical-panel" aria-labelledby="tactical-title">
+        <h2 class="panel-title" id="tactical-title">
+          <b>02</b> Three-dimensional track
+          <small>Reserved</small>
+        </h2>
+        <div class="viewport" id="three-d-viewport" aria-label="Reserved space for the future 3D tracking view"></div>
+        <div class="mfd-footer">
+          <div class="readout"><span class="readout__label">Telemetry source</span><strong class="readout__value" id="source">—</strong></div>
+          <div class="readout"><span class="readout__label">Vehicle identity</span><strong class="readout__value" id="tracker">—</strong></div>
+        </div>
+      </section>
+
+      <section class="system-panel turret-panel" aria-labelledby="turret-title">
+        <h2 class="panel-title" id="turret-title">
+          <b>03</b> Turret / ground system
+          <small>Line of sight</small>
+        </h2>
+
+        <div class="instrument-grid turret-instruments">
+          <div class="instrument" id="azimuth-dial">
+            <i class="screw screw--tl"></i><i class="screw screw--tr"></i>
+            <i class="screw screw--bl"></i><i class="screw screw--br"></i>
+            <div class="dial__face">
+              <span class="dial__name">Turret azimuth</span>
+              <span class="dial__unit">relative to launch zero</span>
+              <span class="scale-mark mark--n">0</span><span class="scale-mark mark--e">R</span>
+              <span class="scale-mark mark--s">180</span><span class="scale-mark mark--w">L</span>
+              <div class="dial__needle"></div><div class="dial__hub"></div>
+              <output class="dial__readout" id="yaw_deg">0.0°</output>
+            </div>
+          </div>
+
+          <div class="instrument" id="elevation-dial">
+            <i class="screw screw--tl"></i><i class="screw screw--tr"></i>
+            <i class="screw screw--bl"></i><i class="screw screw--br"></i>
+            <div class="dial__face">
+              <span class="dial__name">Turret elevation</span>
+              <span class="dial__unit">line-of-sight angle</span>
+              <span class="scale-mark mark--nw">0</span><span class="scale-mark mark--n">30</span>
+              <span class="scale-mark mark--ne">60</span><span class="scale-mark mark--se">90</span>
+              <div class="dial__needle"></div><div class="dial__hub"></div>
+              <output class="dial__readout" id="tilt_deg">0.0°</output>
+            </div>
+          </div>
+
+          <div class="instrument" id="range-dial">
+            <i class="screw screw--tl"></i><i class="screw screw--tr"></i>
+            <i class="screw screw--bl"></i><i class="screw screw--br"></i>
+            <div class="dial__face">
+              <span class="dial__name">Target range</span>
+              <span class="dial__unit">turret to rocket · m</span>
+              <span class="scale-mark mark--nw">0</span><span class="scale-mark mark--n">0.5</span>
+              <span class="scale-mark mark--ne">1.0</span><span class="scale-mark mark--se">1.5</span>
+              <span class="scale-mark mark--s">2.0</span><span class="scale-mark mark--sw">×1000</span>
+              <div class="dial__needle"></div><div class="dial__hub"></div>
+              <output class="dial__readout" id="distance_m">0.0</output>
+            </div>
+          </div>
+        </div>
+
+        <p class="system-note">
+          Turret azimuth and elevation are pointing commands. Rocket heading is isolated in the flight-vehicle panel.
+        </p>
+      </section>
+    </main>
   </div>
 
-  <main class="grid">
-    <div class="card"><div class="label">Elapsed</div><div class="value" id="elapsed_s">—</div></div>
-    <div class="card"><div class="label">Altitude</div><div class="value" id="altitude_m">—</div></div>
-    <div class="card"><div class="label">Horizontal speed</div><div class="value" id="horizontal_speed_m_s">—</div></div>
-    <div class="card"><div class="label">Heading</div><div class="value" id="heading_deg">—</div></div>
-    <div class="card"><div class="label">Vertical speed</div><div class="value" id="vertical_speed_m_s">—</div></div>
-    <div class="card"><div class="label">Total speed</div><div class="value" id="speed_m_s">—</div></div>
-    <div class="card"><div class="label">Vertical acceleration</div><div class="value" id="acceleration_m_s2">—</div></div>
-    <div class="card"><div class="label">Yaw</div><div class="value" id="yaw_deg">—</div></div>
-    <div class="card"><div class="label">Tilt</div><div class="value" id="tilt_deg">—</div></div>
-    <div class="card"><div class="label">Distance</div><div class="value" id="distance_m">—</div></div>
-    <div class="card"><div class="label">GPS</div><div class="value" id="gps">—</div></div>
-  </main>
-
-  <footer>Workbook-inspired test profile. No serial ports or turret hardware are accessed.</footer>
-
   <script>
-    const fields = {
-      elapsed_s: ["elapsed_s", " s"],
-      altitude_m: ["altitude_m", " m"],
-      horizontal_speed_m_s: ["horizontal_speed_m_s", " m/s"],
-      heading_deg: ["heading_deg", "°"],
-      vertical_speed_m_s: ["vertical_speed_m_s", " m/s"],
-      speed_m_s: ["speed_m_s", " m/s"],
-      acceleration_m_s2: ["acceleration_m_s2", " m/s²"],
-      yaw_deg: ["yaw_deg", "°"],
-      tilt_deg: ["tilt_deg", "°"],
-      distance_m: ["distance_m", " m"],
+    const dialRanges = {
+      "altitude-dial": [0, 8000, -140, 280],
+      "speed-dial": [0, 700, -140, 280],
+      "vertical-speed-dial": [-100, 700, -140, 280],
+      "heading-dial": [-180, 180, -180, 360],
+      "azimuth-dial": [-180, 180, -180, 360],
+      "elevation-dial": [0, 90, -120, 240],
+      "range-dial": [0, 2000, -140, 280],
     };
+
+    function setDial(id, value) {
+      const [minimum, maximum, start, sweep] = dialRanges[id];
+      const progress = Math.max(0, Math.min(1, (value - minimum) / (maximum - minimum)));
+      document.querySelector(`#${id} .dial__needle`).style.setProperty(
+        "--needle-angle",
+        `${start + progress * sweep}deg`,
+      );
+    }
+
+    function fixed(value, unit = "") {
+      return `${Number(value).toFixed(1)}${unit}`;
+    }
+
+    function updateTelemetry(telemetry) {
+      document.getElementById("elapsed_s").textContent = fixed(telemetry.elapsed_s, " s");
+      document.getElementById("altitude_m").textContent = fixed(telemetry.altitude_m);
+      document.getElementById("speed_m_s").textContent = fixed(telemetry.speed_m_s);
+      document.getElementById("vertical_speed_m_s").textContent = fixed(telemetry.vertical_speed_m_s);
+      document.getElementById("heading_deg").textContent = fixed(telemetry.heading_deg, "°");
+      document.getElementById("horizontal_speed_m_s").textContent = fixed(telemetry.horizontal_speed_m_s, " m/s");
+      document.getElementById("acceleration_m_s2").textContent = fixed(telemetry.acceleration_m_s2, " m/s²");
+      document.getElementById("yaw_deg").textContent = fixed(telemetry.yaw_deg, "°");
+      document.getElementById("tilt_deg").textContent = fixed(telemetry.tilt_deg, "°");
+      document.getElementById("distance_m").textContent = fixed(telemetry.distance_m);
+      document.getElementById("gps_fix").textContent = `${telemetry.gps_fix}D FIX`;
+      document.getElementById("satellites").textContent = `${telemetry.satellites} TRACKED`;
+      document.getElementById("satellite_signal").textContent =
+        `${telemetry.satellites_24db} / ${telemetry.satellites_32db} / ${telemetry.satellites_40db}`;
+      document.getElementById("crc_status").textContent = telemetry.crc_ok ? "CRC OK" : "CRC ERROR";
+      document.getElementById("source").textContent = telemetry.source.toUpperCase();
+      document.getElementById("tracker").textContent = `${telemetry.packet_type} · ${telemetry.tracker_id}`;
+
+      setDial("altitude-dial", telemetry.altitude_m);
+      setDial("speed-dial", telemetry.speed_m_s);
+      setDial("vertical-speed-dial", telemetry.vertical_speed_m_s);
+      setDial("heading-dial", telemetry.heading_deg);
+      setDial("azimuth-dial", telemetry.yaw_deg);
+      setDial("elevation-dial", telemetry.tilt_deg);
+      setDial("range-dial", telemetry.distance_m);
+    }
 
     function connect() {
       const protocol = location.protocol === "https:" ? "wss" : "ws";
@@ -123,27 +770,15 @@
       const connection = document.getElementById("connection");
 
       socket.onopen = () => {
-        connection.textContent = "Connected";
-        connection.className = "connected";
+        connection.textContent = "Data link online";
+        connection.className = "annunciator connected";
       };
 
-      socket.onmessage = (event) => {
-        const telemetry = JSON.parse(event.data);
-        document.getElementById("tracker").textContent = `${telemetry.packet_type} · ${telemetry.tracker_id}`;
-        for (const [elementId, [key, unit]] of Object.entries(fields)) {
-          document.getElementById(elementId).textContent = `${telemetry[key]}${unit}`;
-        }
-        const crc = telemetry.crc_ok ? "CRC OK" : "CRC ERROR";
-        document.getElementById("gps").textContent =
-          `${telemetry.gps_fix}D · ${telemetry.satellites} sats · ${crc}`;
-        document.getElementById("gps").title =
-          `Signal counts: ≥24 dB ${telemetry.satellites_24db}, ` +
-          `≥32 dB ${telemetry.satellites_32db}, ≥40 dB ${telemetry.satellites_40db}`;
-      };
+      socket.onmessage = (event) => updateTelemetry(JSON.parse(event.data));
 
       socket.onclose = () => {
-        connection.textContent = "Disconnected — reconnecting";
-        connection.className = "disconnected";
+        connection.textContent = "Data link offline";
+        connection.className = "annunciator disconnected";
         setTimeout(connect, 1000);
       };
     }
