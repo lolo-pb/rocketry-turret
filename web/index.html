@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Rocketry Turret — Track Control</title>
   <style>
+    @property --needle-angle {
+      syntax: "<angle>";
+      inherits: false;
+      initial-value: -140deg;
+    }
+
     :root {
       color-scheme: dark;
       font-family: "Arial Narrow", "Roboto Condensed", ui-monospace, monospace;
@@ -331,6 +337,21 @@
       pointer-events: none;
     }
 
+    .dial__subticks {
+      position: absolute;
+      z-index: 1;
+      inset: var(--subtick-inset);
+      border-radius: 50%;
+      background: repeating-conic-gradient(
+        from var(--subtick-offset),
+        rgba(241, 243, 241, 0.48) 0 var(--subtick-width),
+        transparent var(--subtick-width) var(--subtick-spacing)
+      );
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--subtick-length)), #000 calc(100% - var(--subtick-length) + 1px));
+      mask: radial-gradient(farthest-side, transparent calc(100% - var(--subtick-length)), #000 calc(100% - var(--subtick-length) + 1px));
+      pointer-events: none;
+    }
+
     .dial__major-ticks {
       position: absolute;
       z-index: 2;
@@ -392,7 +413,7 @@
       opacity: 0.8;
       transform: rotate(var(--needle-angle, -140deg));
       transform-origin: 50% 100%;
-      transition: transform 140ms linear;
+      transition: --needle-angle 140ms linear;
     }
 
     .dial__needle::after {
@@ -442,6 +463,18 @@
       font-size: clamp(0.62rem, 1vw, 0.92rem);
       font-weight: 700;
       text-shadow: 0 0 4px rgba(241, 243, 241, 0.18);
+    }
+
+    .altitude-mark {
+      inset: 15%;
+      text-align: center;
+      transform: rotate(var(--mark-angle));
+      pointer-events: none;
+    }
+
+    .altitude-mark span {
+      display: inline-block;
+      transform: rotate(var(--label-angle));
     }
 
     .mark--nw { top: 20%; left: 18%; }
@@ -801,14 +834,21 @@
         </h2>
 
         <div class="instrument-grid">
-          <div class="instrument dial" id="altitude-dial" data-min="0" data-max="8000" data-start-angle="-140" data-sweep-angle="280">
+          <div class="instrument dial" id="altitude-dial" data-min="0" data-max="1000" data-start-angle="0" data-sweep-angle="360" data-wrap-range="1000" data-tick-offset="-0.5" data-minor-tick-spacing="36" data-minor-tick-width="1" data-subtick-offset="-0.175" data-subtick-spacing="3.6" data-subtick-width="0.35" data-subtick-inset="12" data-subtick-length="9" data-major-tick-spacing="360" data-major-tick-width="1.5" data-major-tick-inset="12" data-major-tick-length="18">
             <i class="screw screw--tl"></i><i class="screw screw--tr"></i>
             <i class="screw screw--bl"></i><i class="screw screw--br"></i>
             <div class="dial__face">
               <span class="dial__name">Rocket altitude</span>
-              <span class="scale-mark mark--nw">0</span><span class="scale-mark mark--n">2</span>
-              <span class="scale-mark mark--ne">4</span><span class="scale-mark mark--se">6</span>
-              <span class="scale-mark mark--s">8</span><span class="scale-mark mark--sw">×1000</span>
+              <span class="scale-mark altitude-mark" style="--mark-angle: 0deg; --label-angle: 0deg"><span>0</span></span>
+              <span class="scale-mark altitude-mark" style="--mark-angle: 36deg; --label-angle: -36deg"><span>1</span></span>
+              <span class="scale-mark altitude-mark" style="--mark-angle: 72deg; --label-angle: -72deg"><span>2</span></span>
+              <span class="scale-mark altitude-mark" style="--mark-angle: 108deg; --label-angle: -108deg"><span>3</span></span>
+              <span class="scale-mark altitude-mark" style="--mark-angle: 144deg; --label-angle: -144deg"><span>4</span></span>
+              <span class="scale-mark altitude-mark" style="--mark-angle: 180deg; --label-angle: -180deg"><span>5</span></span>
+              <span class="scale-mark altitude-mark" style="--mark-angle: 216deg; --label-angle: -216deg"><span>6</span></span>
+              <span class="scale-mark altitude-mark" style="--mark-angle: 252deg; --label-angle: -252deg"><span>7</span></span>
+              <span class="scale-mark altitude-mark" style="--mark-angle: 288deg; --label-angle: -288deg"><span>8</span></span>
+              <span class="scale-mark altitude-mark" style="--mark-angle: 324deg; --label-angle: -324deg"><span>9</span></span>
               <div class="dial__needle"></div><div class="dial__hub"></div>
               <div class="dial__measurement">
                 <output class="dial__readout" id="altitude_m">00000.0</output>
@@ -983,6 +1023,18 @@
       setOptionalDialVariable(dial, "minorTickInset", "--minor-tick-inset", "px");
       setOptionalDialVariable(dial, "minorTickLength", "--minor-tick-length", "px");
 
+      if (dial.dataset.subtickSpacing !== undefined) {
+        setOptionalDialVariable(dial, "subtickOffset", "--subtick-offset", "deg");
+        setOptionalDialVariable(dial, "subtickSpacing", "--subtick-spacing", "deg");
+        setOptionalDialVariable(dial, "subtickWidth", "--subtick-width", "deg");
+        setOptionalDialVariable(dial, "subtickInset", "--subtick-inset", "px");
+        setOptionalDialVariable(dial, "subtickLength", "--subtick-length", "px");
+
+        const subticks = document.createElement("span");
+        subticks.className = "dial__subticks";
+        dial.querySelector(".dial__face").appendChild(subticks);
+      }
+
       if (dial.dataset.majorTickSpacing === undefined) {
         return;
       }
@@ -1007,7 +1059,9 @@
       const maximum = Number(dial.dataset.max);
       const start = Number(dial.dataset.startAngle);
       const sweep = Number(dial.dataset.sweepAngle);
-      const progress = Math.max(0, Math.min(1, (value - minimum) / (maximum - minimum)));
+      const wrapRange = Number(dial.dataset.wrapRange);
+      const valueRange = wrapRange > 0 ? wrapRange : maximum - minimum;
+      const progress = (value - minimum) / valueRange;
       dial.querySelector(".dial__needle").style.setProperty(
         "--needle-angle",
         `${start + progress * sweep}deg`,
