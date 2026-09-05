@@ -231,7 +231,8 @@
     }
 
     @media (min-width: 761px) {
-      .dial {
+      .dial,
+      .elevation-instrument {
         container-type: size;
       }
     }
@@ -454,6 +455,14 @@
       box-shadow: 0 0 5px rgba(255, 88, 77, 0.45);
     }
 
+    #altitude-dial .dial__needle {
+      z-index: 7;
+    }
+
+    #altitude-dial .dial__hub {
+      z-index: 8;
+    }
+
     .dial__hub {
       position: absolute;
       z-index: 6;
@@ -664,6 +673,128 @@
       height: auto;
     }
 
+    .turret-top .dial__measurement {
+      width: min(70%, calc(9ch + 14px));
+      font-size: clamp(0.66rem, 0.78vw, 0.82rem);
+    }
+
+    .turret-top .dial__readout {
+      padding: 3px 5px 2px;
+    }
+
+    .turret-top .dial__unit {
+      margin-top: 3px;
+      font-size: 0.4rem;
+    }
+
+    .turret-top .dial__name {
+      font-size: clamp(0.46rem, 0.54vw, 0.58rem);
+      letter-spacing: 0.11em;
+    }
+
+    .turret-top .dial__scale-unit {
+      font-size: 0.4rem;
+    }
+
+    .turret-top .scale-mark {
+      font-size: clamp(0.5rem, 0.6vw, 0.66rem);
+    }
+
+    .elevation-gauge {
+      position: relative;
+      width: min(100%, 180px);
+      width: min(100%, 100cqh, 180px);
+      height: auto;
+      aspect-ratio: 1;
+    }
+
+    .elevation-gauge__display {
+      position: relative;
+      z-index: 5;
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .elevation-gauge__arc {
+      fill: none;
+      stroke: var(--phosphor);
+      stroke-width: 1.5;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .elevation-gauge__limit {
+      stroke: #7b817d;
+      stroke-width: 2;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .elevation-gauge__tick {
+      stroke: #9ca19d;
+      stroke-width: 1;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .elevation-gauge__tick--major {
+      stroke: var(--phosphor);
+      stroke-width: 1.5;
+    }
+
+    .elevation-gauge__text {
+      fill: #a7aca9;
+      font-family: inherit;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+    }
+
+    .elevation-gauge__name {
+      position: absolute;
+      z-index: 3;
+      top: 18%;
+      right: 4%;
+      width: 58%;
+      transform: none;
+      color: var(--phosphor);
+      font-size: clamp(0.46rem, 0.54vw, 0.58rem);
+      font-weight: 800;
+      letter-spacing: 0.11em;
+      text-align: right;
+      text-transform: uppercase;
+    }
+
+    .elevation-gauge__needle {
+      opacity: 0.8;
+      transform: rotate(var(--elevation-angle, 0deg));
+      transform-box: view-box;
+      transform-origin: 20px 180px;
+      transition: transform 140ms linear;
+    }
+
+    .elevation-gauge__needle line {
+      stroke: var(--amber);
+      stroke-width: 2;
+      filter: drop-shadow(0 0 3px rgba(244, 182, 66, 0.45));
+      vector-effect: non-scaling-stroke;
+    }
+
+    .elevation-gauge__needle polygon {
+      fill: var(--amber);
+    }
+
+    .elevation-gauge__hub {
+      fill: #050505;
+      stroke: var(--amber);
+      stroke-width: 2;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .elevation-gauge .dial__measurement {
+      right: 50%;
+      bottom: 18%;
+      left: auto;
+      transform: none;
+    }
+
     .radar-scope {
       position: relative;
       display: flex;
@@ -833,6 +964,11 @@
       }
 
       .turret-top .dial__face {
+        width: 100%;
+        height: auto;
+      }
+
+      .elevation-gauge {
         width: 100%;
         height: auto;
       }
@@ -1015,14 +1151,36 @@
 
         <div class="turret-layout">
           <div class="turret-top">
-            <div class="instrument dial" id="elevation-dial" data-min="0" data-max="90" data-start-angle="-120" data-sweep-angle="240">
+            <div class="instrument elevation-instrument" id="elevation-gauge">
               <i class="screw screw--tl"></i><i class="screw screw--tr"></i>
               <i class="screw screw--bl"></i><i class="screw screw--br"></i>
-              <div class="dial__face">
-                <span class="dial__name">Turret elevation</span>
-                <span class="scale-mark mark--nw">0</span><span class="scale-mark mark--n">30</span>
-                <span class="scale-mark mark--ne">60</span><span class="scale-mark mark--se">90</span>
-                <div class="dial__needle"></div><div class="dial__hub"></div>
+              <div class="elevation-gauge">
+                <span class="elevation-gauge__name">Turret elevation</span>
+                <svg class="elevation-gauge__display" viewBox="0 0 210 210" role="img" aria-label="Turret elevation from the ground horizon at zero degrees to vertical at ninety degrees">
+                  <path class="elevation-gauge__arc" d="M 180 180 A 160 160 0 0 0 20 20"></path>
+                  <line class="elevation-gauge__limit" x1="20" y1="180" x2="195" y2="180"></line>
+                  <line class="elevation-gauge__limit" x1="20" y1="180" x2="20" y2="5"></line>
+                  <g>
+                    <line class="elevation-gauge__tick" x1="170" y1="180" x2="180" y2="180" transform="rotate(-10 20 180)"></line>
+                    <line class="elevation-gauge__tick" x1="170" y1="180" x2="180" y2="180" transform="rotate(-20 20 180)"></line>
+                    <line class="elevation-gauge__tick elevation-gauge__tick--major" x1="165" y1="180" x2="180" y2="180" transform="rotate(-30 20 180)"></line>
+                    <line class="elevation-gauge__tick" x1="170" y1="180" x2="180" y2="180" transform="rotate(-40 20 180)"></line>
+                    <line class="elevation-gauge__tick" x1="170" y1="180" x2="180" y2="180" transform="rotate(-50 20 180)"></line>
+                    <line class="elevation-gauge__tick elevation-gauge__tick--major" x1="165" y1="180" x2="180" y2="180" transform="rotate(-60 20 180)"></line>
+                    <line class="elevation-gauge__tick" x1="170" y1="180" x2="180" y2="180" transform="rotate(-70 20 180)"></line>
+                    <line class="elevation-gauge__tick" x1="170" y1="180" x2="180" y2="180" transform="rotate(-80 20 180)"></line>
+                  </g>
+                  <text class="elevation-gauge__text" x="181" y="174">0°</text>
+                  <text class="elevation-gauge__text" x="139" y="105">30°</text>
+                  <text class="elevation-gauge__text" x="74" y="52">60°</text>
+                  <text class="elevation-gauge__text" x="27" y="19">90°</text>
+                  <text class="elevation-gauge__text" x="139" y="198">GROUND</text>
+                  <g class="elevation-gauge__needle" id="elevation-indicator">
+                    <line x1="20" y1="180" x2="160" y2="180"></line>
+                    <polygon points="166,180 153,174 153,186"></polygon>
+                  </g>
+                  <circle class="elevation-gauge__hub" cx="20" cy="180" r="5"></circle>
+                </svg>
                 <div class="dial__measurement">
                   <output class="dial__readout" id="tilt_deg">00000.0</output>
                   <span class="dial__unit">DEG</span>
@@ -1097,6 +1255,8 @@
     const RADAR_RADIUS = 165;
     const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
     const SPEED_OF_SOUND_M_S = 343;
+    const ELEVATION_MIN_DEG = 0;
+    const ELEVATION_MAX_DEG = 90;
 
     function setOptionalDialVariable(dial, dataName, propertyName, unit) {
       const value = dial.dataset[dataName];
@@ -1270,6 +1430,17 @@
       return constrainedYaw;
     }
 
+    function setElevationGauge(elevation) {
+      const constrainedElevation = Math.max(
+        ELEVATION_MIN_DEG,
+        Math.min(ELEVATION_MAX_DEG, elevation),
+      );
+      document.getElementById("elevation-indicator").style.setProperty(
+        "--elevation-angle",
+        `${-constrainedElevation}deg`,
+      );
+    }
+
     function updateTelemetry(telemetry) {
       document.getElementById("elapsed_s").textContent = fixed(telemetry.elapsed_s, " s");
       setInstrumentValue("altitude_m", telemetry.altitude_m);
@@ -1293,7 +1464,7 @@
       setDial("altitude-dial", telemetry.altitude_m);
       setDial("speed-dial", telemetry.speed_m_s);
       setDial("heading-dial", telemetry.heading_deg);
-      setDial("elevation-dial", telemetry.tilt_deg);
+      setElevationGauge(telemetry.tilt_deg);
       setDial("range-dial", telemetry.distance_m);
     }
 
