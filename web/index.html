@@ -1144,10 +1144,11 @@
 
         <div class="digital-bank">
           <div class="readout"><span class="readout__label">Vertical acceleration</span><strong class="readout__value" id="acceleration_m_s2">0.0 m/s²</strong></div>
-          <div class="readout"><span class="readout__label">GPS fix</span><strong class="readout__value" id="gps_fix">—</strong></div>
+          <div class="readout"><span class="readout__label">G force</span><strong class="readout__value" id="g_force">0.0 G</strong></div>
           <div class="readout"><span class="readout__label">Satellites</span><strong class="readout__value" id="satellites">—</strong></div>
           <div class="readout"><span class="readout__label">Signal bands</span><strong class="readout__value" id="satellite_signal">—</strong></div>
           <div class="readout"><span class="readout__label">Packet integrity</span><strong class="readout__value" id="crc_status">—</strong></div>
+          <div class="readout"><span class="readout__label">GPS fix</span><strong class="readout__value" id="gps_fix">—</strong></div>
         </div>
       </section>
 
@@ -1275,6 +1276,7 @@
     const RADAR_RADIUS = 165;
     const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
     const SPEED_OF_SOUND_M_S = 343;
+    const STANDARD_GRAVITY_M_S2 = 9.80665;
     const ELEVATION_MIN_DEG = 0;
     const ELEVATION_MAX_DEG = 90;
 
@@ -1470,6 +1472,10 @@
       setInstrumentValue("heading_deg", telemetry.heading_deg);
       setInstrumentValue("horizontal_speed_m_s", telemetry.horizontal_speed_m_s);
       document.getElementById("acceleration_m_s2").textContent = fixed(telemetry.acceleration_m_s2, " m/s²");
+      document.getElementById("g_force").textContent = fixed(
+        telemetry.acceleration_m_s2 / STANDARD_GRAVITY_M_S2,
+        " G",
+      );
       setInstrumentValue("yaw_deg", setRadarAzimuth(telemetry.yaw_deg));
       setInstrumentValue("tilt_deg", telemetry.tilt_deg);
       setInstrumentValue("distance_m", telemetry.distance_m);
