@@ -700,6 +700,10 @@
       font-size: clamp(0.5rem, 0.6vw, 0.66rem);
     }
 
+    #range-dial .cycle-mark {
+      inset: 19%;
+    }
+
     .elevation-gauge {
       position: relative;
       width: min(100%, 180px);
@@ -745,6 +749,11 @@
       font-family: inherit;
       font-size: 10px;
       letter-spacing: 0.08em;
+    }
+
+    .elevation-gauge__angle-label {
+      dominant-baseline: middle;
+      text-anchor: middle;
     }
 
     .elevation-gauge__name {
@@ -1173,10 +1182,10 @@
                     <line class="elevation-gauge__tick" x1="170" y1="180" x2="180" y2="180" transform="rotate(-70 20 180)"></line>
                     <line class="elevation-gauge__tick" x1="170" y1="180" x2="180" y2="180" transform="rotate(-80 20 180)"></line>
                   </g>
-                  <text class="elevation-gauge__text" x="181" y="174">0°</text>
-                  <text class="elevation-gauge__text" x="139" y="105">30°</text>
-                  <text class="elevation-gauge__text" x="74" y="52">60°</text>
-                  <text class="elevation-gauge__text" x="27" y="19">90°</text>
+                  <text class="elevation-gauge__text elevation-gauge__angle-label" x="194" y="168">0°</text>
+                  <text class="elevation-gauge__text elevation-gauge__angle-label" x="171" y="93">30°</text>
+                  <text class="elevation-gauge__text elevation-gauge__angle-label" x="107" y="29">60°</text>
+                  <text class="elevation-gauge__text elevation-gauge__angle-label" x="32" y="6">90°</text>
                   <text class="elevation-gauge__text" x="139" y="198">GROUND</text>
                   <g class="elevation-gauge__needle" id="elevation-indicator">
                     <line x1="20" y1="180" x2="160" y2="180"></line>
