@@ -386,6 +386,18 @@
       text-align: center;
     }
 
+    .dial__scale-unit {
+      position: absolute;
+      z-index: 3;
+      top: 34%;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #7b817d;
+      font-size: 0.48rem;
+      letter-spacing: 0.12em;
+      white-space: nowrap;
+    }
+
     .dial__measurement {
       position: absolute;
       z-index: 4;
@@ -852,6 +864,7 @@
             <i class="screw screw--bl"></i><i class="screw screw--br"></i>
             <div class="dial__face">
               <span class="dial__name">Rocket altitude</span>
+              <span class="dial__scale-unit">1000 M</span>
               <span class="scale-mark altitude-mark" style="--mark-angle: 0deg; --label-angle: 0deg"><span>0</span></span>
               <span class="scale-mark altitude-mark" style="--mark-angle: 36deg; --label-angle: -36deg"><span>1</span></span>
               <span class="scale-mark altitude-mark" style="--mark-angle: 72deg; --label-angle: -72deg"><span>2</span></span>
@@ -865,7 +878,7 @@
               <div class="dial__needle"></div><div class="dial__hub"></div>
               <div class="dial__measurement">
                 <output class="dial__readout" id="altitude_m">00000.0</output>
-                <span class="dial__unit">M ASL</span>
+                <span class="dial__unit">M</span>
               </div>
             </div>
           </div>
