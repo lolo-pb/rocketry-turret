@@ -445,6 +445,15 @@
       background: var(--amber);
     }
 
+    #heading-dial .dial__needle,
+    #heading-dial .dial__needle::after {
+      background: var(--danger);
+    }
+
+    #heading-dial .dial__needle {
+      box-shadow: 0 0 5px rgba(255, 88, 77, 0.45);
+    }
+
     .dial__hub {
       position: absolute;
       z-index: 6;
@@ -883,7 +892,7 @@
             </div>
           </div>
 
-          <div class="instrument dial" id="heading-dial" data-min="-180" data-max="180" data-start-angle="-180" data-sweep-angle="360">
+          <div class="instrument dial" id="heading-dial" data-min="-180" data-max="180" data-start-angle="-180" data-sweep-angle="360" data-tick-offset="-0.4" data-minor-tick-spacing="45" data-minor-tick-width="0.8" data-subtick-offset="-0.2" data-subtick-spacing="22.5" data-subtick-width="0.4" data-subtick-inset="12" data-subtick-length="9">
             <i class="screw screw--tl"></i><i class="screw screw--tr"></i>
             <i class="screw screw--bl"></i><i class="screw screw--br"></i>
             <div class="dial__face">
