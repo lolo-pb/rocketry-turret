@@ -749,15 +749,14 @@
 
     .elevation-gauge__name {
       position: absolute;
-      z-index: 3;
-      top: 18%;
-      right: 4%;
-      width: 58%;
-      transform: none;
-      color: var(--phosphor);
-      font-size: clamp(0.46rem, 0.54vw, 0.58rem);
-      font-weight: 800;
-      letter-spacing: 0.11em;
+      z-index: 6;
+      top: 10px;
+      right: 12px;
+      left: 12px;
+      color: #7b817d;
+      font-size: clamp(0.55rem, 0.7vw, 0.7rem);
+      font-weight: 700;
+      letter-spacing: 0.14em;
       text-align: right;
       text-transform: uppercase;
     }
@@ -811,6 +810,7 @@
       z-index: 3;
       top: 10px;
       right: 12px;
+      bottom: 9px;
       left: 12px;
       display: flex;
       align-items: flex-start;
@@ -828,6 +828,9 @@
     }
 
     .radar-measurement {
+      position: absolute;
+      bottom: 0;
+      left: 0;
       width: min(48%, calc(9ch + 18px));
       font-size: clamp(1.08rem, 1.6vw, 1.45rem);
     }
@@ -1154,8 +1157,8 @@
             <div class="instrument elevation-instrument" id="elevation-gauge">
               <i class="screw screw--tl"></i><i class="screw screw--tr"></i>
               <i class="screw screw--bl"></i><i class="screw screw--br"></i>
+              <span class="elevation-gauge__name">Turret elevation</span>
               <div class="elevation-gauge">
-                <span class="elevation-gauge__name">Turret elevation</span>
                 <svg class="elevation-gauge__display" viewBox="0 0 210 210" role="img" aria-label="Turret elevation from the ground horizon at zero degrees to vertical at ninety degrees">
                   <path class="elevation-gauge__arc" d="M 180 180 A 160 160 0 0 0 20 20"></path>
                   <line class="elevation-gauge__limit" x1="20" y1="180" x2="195" y2="180"></line>
