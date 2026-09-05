@@ -1030,14 +1030,22 @@
               </div>
             </div>
 
-            <div class="instrument dial" id="range-dial" data-min="0" data-max="2000" data-start-angle="-140" data-sweep-angle="280">
+            <div class="instrument dial" id="range-dial" data-min="0" data-max="1000" data-start-angle="0" data-sweep-angle="360" data-wrap-range="1000" data-tick-offset="-0.5" data-minor-tick-spacing="36" data-minor-tick-width="1" data-subtick-offset="-0.175" data-subtick-spacing="3.6" data-subtick-width="0.35" data-subtick-inset="12" data-subtick-length="9" data-major-tick-spacing="360" data-major-tick-width="1.5" data-major-tick-inset="12" data-major-tick-length="18">
               <i class="screw screw--tl"></i><i class="screw screw--tr"></i>
               <i class="screw screw--bl"></i><i class="screw screw--br"></i>
               <div class="dial__face">
                 <span class="dial__name">Target range</span>
-                <span class="scale-mark mark--nw">0</span><span class="scale-mark mark--n">0.5</span>
-                <span class="scale-mark mark--ne">1.0</span><span class="scale-mark mark--se">1.5</span>
-                <span class="scale-mark mark--s">2.0</span><span class="scale-mark mark--sw">×1000</span>
+                <span class="dial__scale-unit">1000 M</span>
+                <span class="scale-mark cycle-mark" style="--mark-angle: 0deg; --label-angle: 0deg"><span>0</span></span>
+                <span class="scale-mark cycle-mark" style="--mark-angle: 36deg; --label-angle: -36deg"><span>1</span></span>
+                <span class="scale-mark cycle-mark" style="--mark-angle: 72deg; --label-angle: -72deg"><span>2</span></span>
+                <span class="scale-mark cycle-mark" style="--mark-angle: 108deg; --label-angle: -108deg"><span>3</span></span>
+                <span class="scale-mark cycle-mark" style="--mark-angle: 144deg; --label-angle: -144deg"><span>4</span></span>
+                <span class="scale-mark cycle-mark" style="--mark-angle: 180deg; --label-angle: -180deg"><span>5</span></span>
+                <span class="scale-mark cycle-mark" style="--mark-angle: 216deg; --label-angle: -216deg"><span>6</span></span>
+                <span class="scale-mark cycle-mark" style="--mark-angle: 252deg; --label-angle: -252deg"><span>7</span></span>
+                <span class="scale-mark cycle-mark" style="--mark-angle: 288deg; --label-angle: -288deg"><span>8</span></span>
+                <span class="scale-mark cycle-mark" style="--mark-angle: 324deg; --label-angle: -324deg"><span>9</span></span>
                 <div class="dial__needle"></div><div class="dial__hub"></div>
                 <div class="dial__measurement">
                   <output class="dial__readout" id="distance_m">00000.0</output>
