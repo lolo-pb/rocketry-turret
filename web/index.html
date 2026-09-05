@@ -482,6 +482,39 @@
       white-space: nowrap;
     }
 
+    .mach-measurement {
+      position: absolute;
+      z-index: 4;
+      bottom: 30%;
+      right: 25%;
+      width: min(40%, calc(3ch + 18px));
+      font-size: clamp(0.82rem, 1.1vw, 1.1rem);
+    }
+
+    .mach-readout {
+      display: block;
+      width: 100%;
+      padding: 5px 8px 4px;
+      border: 2px solid var(--phosphor);
+      color: var(--phosphor);
+      background: #020202;
+      font-size: 1em;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .mach-unit {
+      display: block;
+      width: 100%;
+      margin-top: 5px;
+      color: #7b817d;
+      font-size: 0.48rem;
+      letter-spacing: 0.12em;
+      text-align: center;
+    }
+
     .scale-mark {
       position: absolute;
       z-index: 3;
@@ -492,14 +525,14 @@
       text-shadow: 0 0 4px rgba(241, 243, 241, 0.18);
     }
 
-    .altitude-mark {
+    .cycle-mark {
       inset: 15%;
       text-align: center;
       transform: rotate(var(--mark-angle));
       pointer-events: none;
     }
 
-    .altitude-mark span {
+    .cycle-mark span {
       display: inline-block;
       transform: rotate(var(--label-angle));
     }
@@ -874,16 +907,16 @@
             <div class="dial__face">
               <span class="dial__name">Rocket altitude</span>
               <span class="dial__scale-unit">1000 M</span>
-              <span class="scale-mark altitude-mark" style="--mark-angle: 0deg; --label-angle: 0deg"><span>0</span></span>
-              <span class="scale-mark altitude-mark" style="--mark-angle: 36deg; --label-angle: -36deg"><span>1</span></span>
-              <span class="scale-mark altitude-mark" style="--mark-angle: 72deg; --label-angle: -72deg"><span>2</span></span>
-              <span class="scale-mark altitude-mark" style="--mark-angle: 108deg; --label-angle: -108deg"><span>3</span></span>
-              <span class="scale-mark altitude-mark" style="--mark-angle: 144deg; --label-angle: -144deg"><span>4</span></span>
-              <span class="scale-mark altitude-mark" style="--mark-angle: 180deg; --label-angle: -180deg"><span>5</span></span>
-              <span class="scale-mark altitude-mark" style="--mark-angle: 216deg; --label-angle: -216deg"><span>6</span></span>
-              <span class="scale-mark altitude-mark" style="--mark-angle: 252deg; --label-angle: -252deg"><span>7</span></span>
-              <span class="scale-mark altitude-mark" style="--mark-angle: 288deg; --label-angle: -288deg"><span>8</span></span>
-              <span class="scale-mark altitude-mark" style="--mark-angle: 324deg; --label-angle: -324deg"><span>9</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 0deg; --label-angle: 0deg"><span>0</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 36deg; --label-angle: -36deg"><span>1</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 72deg; --label-angle: -72deg"><span>2</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 108deg; --label-angle: -108deg"><span>3</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 144deg; --label-angle: -144deg"><span>4</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 180deg; --label-angle: -180deg"><span>5</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 216deg; --label-angle: -216deg"><span>6</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 252deg; --label-angle: -252deg"><span>7</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 288deg; --label-angle: -288deg"><span>8</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 324deg; --label-angle: -324deg"><span>9</span></span>
               <div class="dial__needle"></div><div class="dial__hub"></div>
               <div class="dial__measurement">
                 <output class="dial__readout" id="altitude_m">00000.0</output>
@@ -907,18 +940,30 @@
             </div>
           </div>
 
-          <div class="instrument dial" id="speed-dial" data-min="0" data-max="700" data-start-angle="-140" data-sweep-angle="280">
+          <div class="instrument dial" id="speed-dial" data-min="0" data-max="100" data-start-angle="0" data-sweep-angle="360" data-wrap-range="100" data-tick-offset="-0.5" data-minor-tick-spacing="36" data-minor-tick-width="1" data-subtick-offset="-0.175" data-subtick-spacing="3.6" data-subtick-width="0.35" data-subtick-inset="12" data-subtick-length="9" data-major-tick-spacing="360" data-major-tick-width="1.5" data-major-tick-inset="12" data-major-tick-length="18">
             <i class="screw screw--tl"></i><i class="screw screw--tr"></i>
             <i class="screw screw--bl"></i><i class="screw screw--br"></i>
             <div class="dial__face">
               <span class="dial__name">Rocket speed</span>
-              <span class="scale-mark mark--nw">0</span><span class="scale-mark mark--n">140</span>
-              <span class="scale-mark mark--ne">280</span><span class="scale-mark mark--se">420</span>
-              <span class="scale-mark mark--s">560</span><span class="scale-mark mark--sw">700</span>
+              <span class="dial__scale-unit">100 M/S</span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 0deg; --label-angle: 0deg"><span>0</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 36deg; --label-angle: -36deg"><span>1</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 72deg; --label-angle: -72deg"><span>2</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 108deg; --label-angle: -108deg"><span>3</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 144deg; --label-angle: -144deg"><span>4</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 180deg; --label-angle: -180deg"><span>5</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 216deg; --label-angle: -216deg"><span>6</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 252deg; --label-angle: -252deg"><span>7</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 288deg; --label-angle: -288deg"><span>8</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 324deg; --label-angle: -324deg"><span>9</span></span>
               <div class="dial__needle"></div><div class="dial__hub"></div>
               <div class="dial__measurement">
                 <output class="dial__readout" id="speed_m_s">00000.0</output>
                 <span class="dial__unit">M/S</span>
+              </div>
+              <div class="mach-measurement">
+                <output class="mach-readout" id="mach_number">0.0</output>
+                <span class="mach-unit">MACH</span>
               </div>
             </div>
           </div>
@@ -1043,6 +1088,7 @@
     const RADAR_CENTER = { x: 200, y: 190 };
     const RADAR_RADIUS = 165;
     const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
+    const SPEED_OF_SOUND_M_S = 343;
 
     function setOptionalDialVariable(dial, dataName, propertyName, unit) {
       const value = dial.dataset[dataName];
@@ -1105,6 +1151,10 @@
 
     function fixed(value, unit = "") {
       return `${Number(value).toFixed(1)}${unit}`;
+    }
+
+    function machValue(speedMps) {
+      return (Number(speedMps) / SPEED_OF_SOUND_M_S).toFixed(1);
     }
 
     function instrumentValue(value) {
@@ -1216,6 +1266,7 @@
       document.getElementById("elapsed_s").textContent = fixed(telemetry.elapsed_s, " s");
       setInstrumentValue("altitude_m", telemetry.altitude_m);
       setInstrumentValue("speed_m_s", telemetry.speed_m_s);
+      document.getElementById("mach_number").textContent = machValue(telemetry.speed_m_s);
       setInstrumentValue("vertical_speed_m_s", telemetry.vertical_speed_m_s);
       setInstrumentValue("heading_deg", telemetry.heading_deg);
       setInstrumentValue("horizontal_speed_m_s", telemetry.horizontal_speed_m_s);
