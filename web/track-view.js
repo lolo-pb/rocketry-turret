@@ -21,7 +21,7 @@ function startTrackView(context) {
   const TRAIL_POINT_DISTANCE_M = 1;
   const CORRECTION_DURATION_MS = 500;
   const MAX_PREDICTION_MS = 1500;
-  const ORBIT_STEP_RAD = THREE.MathUtils.degToRad(15);
+  const ORBIT_SPEED_RAD_S = THREE.MathUtils.degToRad(45);
   const ZOOM_STEP = 0.12;
   const cameraDirection = new THREE.Vector3();
   const scene = new THREE.Scene();
@@ -58,6 +58,8 @@ function startTrackView(context) {
   let targetCameraAzimuthRad = 0;
   let cameraZoom = 0;
   let targetCameraZoom = 0;
+  let previousFrameMs = null;
+  const pressedOrbitKeys = new Set();
 
   const trail = new THREE.Line(
     new THREE.BufferGeometry(),
@@ -301,7 +303,10 @@ function startTrackView(context) {
     return box;
   }
 
-  function updateCamera() {
+  function updateCamera(deltaSeconds) {
+    const orbitDirection = Number(pressedOrbitKeys.has("arrowleft"))
+      - Number(pressedOrbitKeys.has("arrowright"));
+    targetCameraAzimuthRad += orbitDirection * ORBIT_SPEED_RAD_S * deltaSeconds;
     const bounds = sceneBounds();
     const overviewTarget = bounds.getCenter(new THREE.Vector3());
     const size = bounds.getSize(new THREE.Vector3());
@@ -352,8 +357,12 @@ function startTrackView(context) {
   }
 
   function render(nowMs) {
+    const deltaSeconds = previousFrameMs === null
+      ? 0
+      : Math.min((nowMs - previousFrameMs) / 1000, 0.1);
+    previousFrameMs = nowMs;
     updateRocket(nowMs);
-    updateCamera();
+    updateCamera(deltaSeconds);
     updateMarkerScale();
     renderer.render(scene, camera);
     requestAnimationFrame(render);
@@ -367,7 +376,7 @@ function startTrackView(context) {
     }
     event.preventDefault();
     if (key === "arrowleft" || key === "arrowright") {
-      targetCameraAzimuthRad += key === "arrowleft" ? ORBIT_STEP_RAD : -ORBIT_STEP_RAD;
+      pressedOrbitKeys.add(key);
     } else if (key === "arrowup" || key === "arrowdown") {
       targetCameraZoom = THREE.MathUtils.clamp(
         targetCameraZoom + (key === "arrowup" ? ZOOM_STEP : -ZOOM_STEP),
@@ -379,6 +388,10 @@ function startTrackView(context) {
       targetCameraZoom = 0;
     }
   });
+  window.addEventListener("keyup", (event) => {
+    pressedOrbitKeys.delete(event.key.toLowerCase());
+  });
+  window.addEventListener("blur", () => pressedOrbitKeys.clear());
   if (window.latestRocketTelemetry) {
     acceptTelemetry(window.latestRocketTelemetry);
   }
