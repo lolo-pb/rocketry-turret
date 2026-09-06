@@ -14,6 +14,7 @@ from pathlib import Path
 import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 
 HOST = "127.0.0.1"
@@ -21,6 +22,12 @@ PORT = 8000
 UPDATE_HZ = 10
 PLAYBACK_SPEED = 1.0
 WEB_DIR = Path(__file__).parent / "web"
+EARTH_RADIUS_M = 6378137.0
+GROUND_STATION_LATITUDE_DEG = 31.95610
+GROUND_STATION_LONGITUDE_DEG = -102.40344
+GROUND_STATION_ALTITUDE_ASL_M = 915.0
+SIMULATED_LAUNCH_EAST_M = 0.0
+SIMULATED_LAUNCH_NORTH_M = 100.0
 
 # Smoothed key points based on the TeleMega flight in the comparison workbook.
 # The final 16 simulated seconds keep the rocket landed for a two-second pause.
@@ -43,6 +50,19 @@ KEYFRAMES = [
 latest_telemetry = {}
 
 
+def enu_to_gps(east_m, north_m, up_m):
+    """Convert local ENU meters back to GPS coordinates for simulation."""
+    latitude = GROUND_STATION_LATITUDE_DEG + math.degrees(north_m / EARTH_RADIUS_M)
+    longitude = GROUND_STATION_LONGITUDE_DEG + math.degrees(
+        east_m
+        / (
+            EARTH_RADIUS_M
+            * math.cos(math.radians(GROUND_STATION_LATITUDE_DEG))
+        )
+    )
+    return latitude, longitude, GROUND_STATION_ALTITUDE_ASL_M + up_m
+
+
 def telemetry_at(sim_time, sequence):
     """Interpolate one deterministic telemetry sample from the keyframes."""
     left = KEYFRAMES[0]
@@ -62,6 +82,15 @@ def telemetry_at(sim_time, sequence):
     horizontal_speed = between(2)
     vertical_speed = between(4)
     vertical_acceleration = 0.0 if span == 0 else (right[4] - left[4]) / span
+    path_bearing_rad = math.radians(between(5))
+    path_distance_m = between(7)
+    east_m = SIMULATED_LAUNCH_EAST_M + math.sin(path_bearing_rad) * path_distance_m
+    north_m = SIMULATED_LAUNCH_NORTH_M + math.cos(path_bearing_rad) * path_distance_m
+    up_m = between(1)
+    latitude, longitude, altitude_asl_m = enu_to_gps(east_m, north_m, up_m)
+    ground_distance_m = math.hypot(east_m, north_m)
+    yaw_deg = math.degrees(math.atan2(east_m, north_m))
+    tilt_deg = math.degrees(math.atan2(up_m, ground_distance_m))
 
     return {
         "source": "simulation",
@@ -75,9 +104,18 @@ def telemetry_at(sim_time, sequence):
         "vertical_speed_m_s": round(vertical_speed, 1),
         "speed_m_s": round(math.hypot(horizontal_speed, vertical_speed), 1),
         "acceleration_m_s2": round(vertical_acceleration, 1),
-        "yaw_deg": round(between(5), 1),
-        "tilt_deg": round(between(6), 1),
-        "distance_m": round(between(7), 1),
+        "yaw_deg": round(yaw_deg, 1),
+        "tilt_deg": round(tilt_deg, 1),
+        "distance_m": round(ground_distance_m, 1),
+        "rocket_latitude_deg": round(latitude, 7),
+        "rocket_longitude_deg": round(longitude, 7),
+        "rocket_altitude_asl_m": round(altitude_asl_m, 1),
+        "rocket_east_m": round(east_m, 2),
+        "rocket_north_m": round(north_m, 2),
+        "rocket_up_m": round(up_m, 1),
+        "ground_station_latitude_deg": GROUND_STATION_LATITUDE_DEG,
+        "ground_station_longitude_deg": GROUND_STATION_LONGITUDE_DEG,
+        "ground_station_altitude_asl_m": GROUND_STATION_ALTITUDE_ASL_M,
         "gps_fix": left[8],
         "satellites": round(between(9)),
         "satellites_24db": round(between(10)),
@@ -112,6 +150,7 @@ async def lifespan(_app):
 
 
 app = FastAPI(lifespan=lifespan)
+app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
 
 
 @app.get("/")

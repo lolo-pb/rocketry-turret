@@ -616,10 +616,78 @@
       box-shadow: inset 0 0 0 1px #202321;
     }
 
+    .track-canvas {
+      position: absolute;
+      z-index: 1;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .track-overlay,
+    .track-fallback {
+      position: absolute;
+      z-index: 3;
+      color: var(--phosphor-dim);
+      font-size: 0.55rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+
+    .track-overlay--legend {
+      top: 15px;
+      right: 16px;
+      display: grid;
+      justify-items: end;
+      gap: 5px;
+    }
+
+    .track-overlay--scale {
+      bottom: 15px;
+      left: 16px;
+    }
+
+    .track-legend__item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .track-legend__dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 5px currentColor;
+    }
+
+    .track-legend__item--launch { color: var(--amber); }
+    .track-legend__item--turret { color: #55d98a; }
+    .track-legend__item--rocket { color: #35d7d2; }
+
+    .track-north {
+      color: var(--phosphor);
+      font-size: 0.7rem;
+    }
+
+    .track-fallback {
+      top: 50%;
+      left: 50%;
+      width: min(80%, 280px);
+      transform: translate(-50%, -50%);
+      color: var(--danger);
+      line-height: 1.6;
+      text-align: center;
+    }
+
     .viewport::before,
     .viewport::after {
       content: "";
       position: absolute;
+      z-index: 3;
       width: 48px;
       height: 48px;
       border-color: var(--phosphor);
@@ -1155,9 +1223,18 @@
       <section class="tactical-panel" aria-labelledby="tactical-title">
         <h2 class="panel-title" id="tactical-title">
           <b>02</b> Three-dimensional track
-          <small>Reserved</small>
+          <small>GPS / ENU simulation</small>
         </h2>
-        <div class="viewport" id="three-d-viewport" aria-label="Reserved space for the future 3D tracking view"></div>
+        <div class="viewport" id="three-d-viewport" aria-label="Three-dimensional GPS tracking view">
+          <canvas class="track-canvas" id="track-canvas"></canvas>
+          <div class="track-overlay track-overlay--legend" aria-hidden="true">
+            <span class="track-north">N ↑</span>
+            <span class="track-legend__item track-legend__item--launch"><i class="track-legend__dot"></i>Launch</span>
+            <span class="track-legend__item track-legend__item--turret"><i class="track-legend__dot"></i>Turret</span>
+            <span class="track-legend__item track-legend__item--rocket"><i class="track-legend__dot"></i>Rocket</span>
+          </div>
+          <span class="track-overlay track-overlay--scale" id="track-grid-scale" aria-hidden="true">Grid: —</span>
+        </div>
         <div class="mfd-footer">
           <div class="readout"><span class="readout__label">Telemetry source</span><strong class="readout__value" id="source">—</strong></div>
           <div class="readout"><span class="readout__label">Vehicle identity</span><strong class="readout__value" id="tracker">—</strong></div>
@@ -1492,6 +1569,8 @@
       setDial("heading-dial", telemetry.heading_deg);
       setElevationGauge(telemetry.tilt_deg);
       setDial("range-dial", telemetry.distance_m);
+      window.latestRocketTelemetry = telemetry;
+      window.dispatchEvent(new CustomEvent("rocket-telemetry", { detail: telemetry }));
     }
 
     function connect() {
@@ -1520,5 +1599,6 @@
     );
     connect();
   </script>
+  <script type="module" src="/static/track-view.js"></script>
 </body>
 </html>
