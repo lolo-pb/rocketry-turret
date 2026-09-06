@@ -3,6 +3,7 @@ import * as THREE from "./vendor/three.module.min.js";
 const canvas = document.getElementById("track-canvas");
 const viewport = document.getElementById("three-d-viewport");
 const gridScale = document.getElementById("track-grid-scale");
+const northArrow = document.getElementById("track-north-arrow");
 const webglContext = canvas.getContext("webgl2", { antialias: true });
 
 if (!webglContext) {
@@ -20,13 +21,10 @@ function startTrackView(context) {
   const TRAIL_POINT_DISTANCE_M = 1;
   const CORRECTION_DURATION_MS = 500;
   const MAX_PREDICTION_MS = 1500;
-  const CAMERA_DIRECTION = new THREE.Vector3(0, 0.72, -1).normalize();
+  const ORBIT_STEP_RAD = THREE.MathUtils.degToRad(15);
+  const cameraDirection = new THREE.Vector3();
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x020202);
-  scene.add(new THREE.AmbientLight(0xffffff, 0.65));
-  const markerLight = new THREE.DirectionalLight(0xffffff, 1.15);
-  markerLight.position.set(-1, 2, -1);
-  scene.add(markerLight);
 
   const renderer = new THREE.WebGLRenderer({ canvas, context, antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -36,7 +34,7 @@ function startTrackView(context) {
   camera.position.set(500, 420, -500);
   camera.lookAt(cameraTarget);
 
-  const markerGeometry = new THREE.SphereGeometry(1, 18, 12);
+  const markerTexture = createRadarDotTexture();
   const turret = createMarker(0x55d98a);
   const launch = createMarker(0xf4b642);
   const rocket = createMarker(0x35d7d2);
@@ -55,6 +53,8 @@ function startTrackView(context) {
   let correctionStartedAtMs = 0;
   let previousElapsedS = null;
   let trailPoints = [];
+  let cameraAzimuthRad = 0;
+  let targetCameraAzimuthRad = 0;
 
   const trail = new THREE.Line(
     new THREE.BufferGeometry(),
@@ -77,16 +77,30 @@ function startTrackView(context) {
 
   rebuildGround(50);
 
+  function createRadarDotTexture() {
+    const dotCanvas = document.createElement("canvas");
+    dotCanvas.width = 128;
+    dotCanvas.height = 128;
+    const dotContext = dotCanvas.getContext("2d");
+    dotContext.fillStyle = "#fff";
+    dotContext.beginPath();
+    dotContext.arc(64, 64, 48, 0, Math.PI * 2);
+    dotContext.fill();
+    return new THREE.CanvasTexture(dotCanvas);
+  }
+
   function createMarker(color) {
-    const marker = new THREE.Mesh(
-      markerGeometry,
-      new THREE.MeshPhongMaterial({
+    const marker = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: markerTexture,
         color,
-        emissive: color,
-        emissiveIntensity: 0.16,
-        shininess: 48,
+        transparent: true,
+        depthTest: false,
+        depthWrite: false,
+        toneMapped: false,
       }),
     );
+    marker.renderOrder = 10;
     scene.add(marker);
     return marker;
   }
@@ -292,13 +306,20 @@ function startTrackView(context) {
     const verticalFov = THREE.MathUtils.degToRad(camera.fov);
     const aspectPenalty = camera.aspect < 1 ? 1 / camera.aspect : 1;
     const distance = radius * aspectPenalty / Math.sin(verticalFov / 2) * 1.12;
-    const desiredPosition = desiredTarget.clone().addScaledVector(CAMERA_DIRECTION, distance);
+    cameraAzimuthRad += (targetCameraAzimuthRad - cameraAzimuthRad) * 0.12;
+    cameraDirection.set(
+      Math.sin(cameraAzimuthRad),
+      0.72,
+      -Math.cos(cameraAzimuthRad),
+    ).normalize();
+    const desiredPosition = desiredTarget.clone().addScaledVector(cameraDirection, distance);
     cameraTarget.lerp(desiredTarget, 0.045);
     camera.position.lerp(desiredPosition, 0.045);
     camera.near = Math.max(distance / 10000, 0.1);
     camera.far = Math.max(distance * 8, 10000);
     camera.updateProjectionMatrix();
     camera.lookAt(cameraTarget);
+    northArrow.style.transform = `rotate(${cameraAzimuthRad}rad)`;
   }
 
   function updateMarkerScale() {
@@ -306,10 +327,10 @@ function startTrackView(context) {
     const distance = camera.position.distanceTo(cameraTarget);
     const worldUnitsPerPixel =
       (2 * distance * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))) / height;
-    const radius = worldUnitsPerPixel * 4.5;
-    turret.scale.setScalar(radius * 0.8);
-    launch.scale.setScalar(radius * 0.8);
-    rocket.scale.setScalar(radius);
+    const markerSize = worldUnitsPerPixel * 20;
+    turret.scale.set(markerSize * 0.8, markerSize * 0.8, 1);
+    launch.scale.set(markerSize * 0.8, markerSize * 0.8, 1);
+    rocket.scale.set(markerSize, markerSize, 1);
   }
 
   function resizeRenderer() {
@@ -329,6 +350,15 @@ function startTrackView(context) {
   }
 
   window.addEventListener("rocket-telemetry", (event) => acceptTelemetry(event.detail));
+  window.addEventListener("keydown", (event) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
+      return;
+    }
+    event.preventDefault();
+    targetCameraAzimuthRad += event.key === "ArrowLeft"
+      ? -ORBIT_STEP_RAD
+      : ORBIT_STEP_RAD;
+  });
   if (window.latestRocketTelemetry) {
     acceptTelemetry(window.latestRocketTelemetry);
   }

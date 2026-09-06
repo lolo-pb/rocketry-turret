@@ -661,7 +661,6 @@
       height: 6px;
       border-radius: 50%;
       background: currentColor;
-      box-shadow: 0 0 5px currentColor;
     }
 
     .track-legend__item--launch { color: var(--amber); }
@@ -669,8 +668,22 @@
     .track-legend__item--rocket { color: #35d7d2; }
 
     .track-north {
+      display: flex;
+      align-items: center;
+      gap: 4px;
       color: var(--phosphor);
       font-size: 0.7rem;
+    }
+
+    .track-north__arrow {
+      display: inline-block;
+      font-style: normal;
+      transform-origin: center;
+    }
+
+    .track-orbit-hint {
+      color: var(--phosphor-dim);
+      font-size: 0.5rem;
     }
 
     .track-fallback {
@@ -1228,7 +1241,8 @@
         <div class="viewport" id="three-d-viewport" aria-label="Three-dimensional GPS tracking view">
           <canvas class="track-canvas" id="track-canvas"></canvas>
           <div class="track-overlay track-overlay--legend" aria-hidden="true">
-            <span class="track-north">N ↑</span>
+            <span class="track-north">N <i class="track-north__arrow" id="track-north-arrow">↑</i></span>
+            <span class="track-orbit-hint">← Orbit →</span>
             <span class="track-legend__item track-legend__item--launch"><i class="track-legend__dot"></i>Launch</span>
             <span class="track-legend__item track-legend__item--turret"><i class="track-legend__dot"></i>Turret</span>
             <span class="track-legend__item track-legend__item--rocket"><i class="track-legend__dot"></i>Rocket</span>
