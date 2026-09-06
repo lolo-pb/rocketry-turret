@@ -21,6 +21,7 @@ HOST = "127.0.0.1"
 PORT = 8000
 UPDATE_HZ = 10
 PLAYBACK_SPEED = 1.0
+PRELAUNCH_HOLD_S = 10.0
 WEB_DIR = Path(__file__).parent / "web"
 EARTH_RADIUS_M = 6378137.0
 GROUND_STATION_LATITUDE_DEG = 31.95610
@@ -29,25 +30,35 @@ GROUND_STATION_ALTITUDE_ASL_M = 915.0
 SIMULATED_LAUNCH_EAST_M = 0.0
 SIMULATED_LAUNCH_NORTH_M = 100.0
 
-# Smoothed key points based on the TeleMega flight in the comparison workbook.
-# The final 16 simulated seconds keep the rocket landed for a two-second pause.
+# Smoothed key points sampled from the TeleMega flight in the comparison workbook.
+# Horizontal speed and heading are estimated between recorded GPS fixes. The
+# GPS path is translated to the tracker.py ground station instead of relocating it.
+# The final simulated seconds keep the rocket landed before the cycle restarts.
 KEYFRAMES = [
     # time, altitude, horizontal speed, heading, vertical speed, yaw, tilt,
     # distance, GPS fix, satellites, satellites >=24/32/40 dB
-    (   0.0,    0.0,  0.0,   0.0,   0.0,   0.0,  0.0,    0.0, 3, 14, 12, 6, 2),
-    (   3.5,  748.0,  4.3,  -8.0, 622.0,  -8.0, 18.0,   15.0, 3, 10,  8, 4, 2),
-    (  3.64,  822.0,  0.0,  -8.0, 620.0,  -8.0, 18.0,   15.0, 3, 10,  8, 4, 2),
-    (   16., 5388.0, 67.6, -25.0, 215.0, -25.0, 55.0,  850.0, 3,  8,  6, 3, 1),
-    (   36., 7480.0, 46.2, -47.0,   0.0, -47.0, 80.0, 1806.0, 3, 12, 10, 5, 2),
-    (  40.5, 7538.0,  0.0, -47.0, -14.0, -47.0, 80.0, 1806.0, 3, 12, 10, 5, 2),
-    (  180., 1800.0,  1.5, 144.0, -61.0, -36.0, 48.0, 1600.0, 3, 14, 12, 7, 3),
-    (241.02,  254.0,  2.5, -20.0, -27.0, -20.0, 18.0, 1750.0, 3, 15, 13, 8, 4),
-    (247.78,   29.0,  4.4, -18.0, -12.0, -18.0,  5.0, 1780.0, 3, 15, 13, 8, 4),
-    (250.0 ,    0.0,  0.0, -18.0,   0.0, -18.0,  0.0, 1780.0, 3, 15, 13, 8, 4),
-    (266.4 ,    0.0,  0.0, -18.0,   0.0, -18.0,  0.0, 1780.0, 3, 15, 13, 8, 4),
+    (   0.0,    0.0,  0.0,   0.0,   0.0,   0.0,  0.0,    0.0, 3, 14,  2, 0, 0),
+    (   3.5,  747.7, 19.1, -57.4, 621.9, -59.8, 18.0,   29.3, 3, 10,  0, 0, 0),
+    (  3.64,  822.4, 19.1, -57.4, 619.6, -59.6, 18.0,   32.0, 3, 10,  0, 0, 0),
+    (   16., 5325.0, 51.2, -17.7, 218.7, -22.6,  8.0,  591.3, 3,  4,  0, 0, 0),
+    (   36., 7518.0, 36.5, -17.8,   0.0, -19.7, 79.0, 1547.3, 3, 11,  4, 0, 0),
+    (  40.5, 7538.3, 23.8, -16.8, -13.6, -19.4, 78.0, 1687.2, 3, 12, 12, 0, 0),
+    (  180., 2194.4,  8.7, 160.5, -31.7,  -9.0, 57.0, 1545.9, 3, 15, 11, 3, 0),
+    (241.02,  254.2, 15.7,  85.7, -27.1,  10.5, 11.0, 1383.4, 3, 15, 12, 6, 0),
+    (247.78,   28.8, 17.5,  84.9, -11.9,  14.7,  1.0, 1430.9, 3, 15, 10, 0, 0),
+    ( 250.0,    0.0,  0.0,  84.9,   0.0,  15.5,  0.0, 1437.0, 3, 15, 10, 0, 0),
+    ( 266.4,    0.0,  0.0,  84.9,   0.0,  15.5,  0.0, 1437.0, 3, 15, 10, 0, 0),
 ]
 
 latest_telemetry = {}
+
+
+def simulation_time_at(sequence):
+    step = PLAYBACK_SPEED / UPDATE_HZ
+    cycle_duration_s = PRELAUNCH_HOLD_S + KEYFRAMES[-1][0]
+    cycle_steps = round(cycle_duration_s / step)
+    cycle_time_s = (sequence % cycle_steps) * step
+    return max(cycle_time_s - PRELAUNCH_HOLD_S, 0.0)
 
 
 def enu_to_gps(east_m, north_m, up_m):
@@ -128,11 +139,9 @@ def telemetry_at(sim_time, sequence):
 async def run_simulation():
     global latest_telemetry
     sequence = 0
-    step = PLAYBACK_SPEED / UPDATE_HZ
-    cycle_steps = round(KEYFRAMES[-1][0] / step)
 
     while True:
-        sim_time = (sequence % cycle_steps) * step
+        sim_time = simulation_time_at(sequence)
         latest_telemetry = telemetry_at(sim_time, sequence)
         sequence += 1
         await asyncio.sleep(1 / UPDATE_HZ)

@@ -5,6 +5,20 @@ import dashboard
 
 
 class DashboardTelemetryTests(unittest.TestCase):
+    def test_simulation_holds_at_launch_before_flight(self):
+        hold_steps = round(
+            dashboard.PRELAUNCH_HOLD_S
+            * dashboard.UPDATE_HZ
+            / dashboard.PLAYBACK_SPEED
+        )
+
+        self.assertEqual(dashboard.simulation_time_at(hold_steps - 1), 0.0)
+        self.assertEqual(dashboard.simulation_time_at(hold_steps), 0.0)
+        self.assertAlmostEqual(
+            dashboard.simulation_time_at(hold_steps + 1),
+            dashboard.PLAYBACK_SPEED / dashboard.UPDATE_HZ,
+        )
+
     def test_first_fix_is_launch_site_north_of_turret(self):
         telemetry = dashboard.telemetry_at(0.0, 0)
 
@@ -14,6 +28,16 @@ class DashboardTelemetryTests(unittest.TestCase):
         self.assertEqual(telemetry["distance_m"], 100.0)
         self.assertEqual(telemetry["yaw_deg"], 0.0)
         self.assertEqual(telemetry["tilt_deg"], 0.0)
+
+    def test_telemega_flight_milestones_are_preserved(self):
+        apogee = dashboard.telemetry_at(40.5, 405)
+        descent = dashboard.telemetry_at(180.0, 1800)
+
+        self.assertEqual(apogee["altitude_m"], 7538.3)
+        self.assertEqual(apogee["vertical_speed_m_s"], -13.6)
+        self.assertEqual(apogee["satellites"], 12)
+        self.assertEqual(descent["altitude_m"], 2194.4)
+        self.assertEqual(descent["vertical_speed_m_s"], -31.7)
 
     def test_coordinates_share_the_configured_ground_station_origin(self):
         telemetry = dashboard.telemetry_at(0.0, 0)
