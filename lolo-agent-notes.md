@@ -18,6 +18,8 @@ dashboard.py simulation -> WebSocket -> web/index.html
 
 Run with `python dashboard.py`. It plays a repeating TeleMega-based flight at 10 updates per second. It does not run `tracker.py`, open serial ports, or command the turret.
 
+3D camera controls: left/right orbit; up zooms toward the rocket; down zooms out and brings all three markers into view; `R` resets the overview. Marker size stays readable while zooming.
+
 ## Dashboard data rule
 
 All changing measurements must come from data available to `tracker.py`, or be calculated from that data. Fields already parsed and discarded by `tracker.py` may be retained for the dashboard.

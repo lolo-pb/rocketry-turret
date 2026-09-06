@@ -22,6 +22,7 @@ function startTrackView(context) {
   const CORRECTION_DURATION_MS = 500;
   const MAX_PREDICTION_MS = 1500;
   const ORBIT_STEP_RAD = THREE.MathUtils.degToRad(15);
+  const ZOOM_STEP = 0.12;
   const cameraDirection = new THREE.Vector3();
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x020202);
@@ -55,6 +56,8 @@ function startTrackView(context) {
   let trailPoints = [];
   let cameraAzimuthRad = 0;
   let targetCameraAzimuthRad = 0;
+  let cameraZoom = 0;
+  let targetCameraZoom = 0;
 
   const trail = new THREE.Line(
     new THREE.BufferGeometry(),
@@ -300,12 +303,19 @@ function startTrackView(context) {
 
   function updateCamera() {
     const bounds = sceneBounds();
-    const desiredTarget = bounds.getCenter(new THREE.Vector3());
+    const overviewTarget = bounds.getCenter(new THREE.Vector3());
     const size = bounds.getSize(new THREE.Vector3());
     const radius = Math.max(size.length() / 2, 220);
     const verticalFov = THREE.MathUtils.degToRad(camera.fov);
     const aspectPenalty = camera.aspect < 1 ? 1 / camera.aspect : 1;
-    const distance = radius * aspectPenalty / Math.sin(verticalFov / 2) * 1.12;
+    const overviewDistance = radius * aspectPenalty / Math.sin(verticalFov / 2) * 1.12;
+    cameraZoom += (targetCameraZoom - cameraZoom) * 0.12;
+    const closeDistance = THREE.MathUtils.clamp(overviewDistance * 0.08, 75, 350);
+    const distance = THREE.MathUtils.lerp(overviewDistance, closeDistance, cameraZoom);
+    const focusAmount = rocket.visible
+      ? THREE.MathUtils.smoothstep(cameraZoom, 0.15, 0.85)
+      : 0;
+    const desiredTarget = overviewTarget.lerp(rocket.position, focusAmount);
     cameraAzimuthRad += (targetCameraAzimuthRad - cameraAzimuthRad) * 0.12;
     cameraDirection.set(
       Math.sin(cameraAzimuthRad),
@@ -351,13 +361,23 @@ function startTrackView(context) {
 
   window.addEventListener("rocket-telemetry", (event) => acceptTelemetry(event.detail));
   window.addEventListener("keydown", (event) => {
-    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
+    const key = event.key.toLowerCase();
+    if (!["arrowleft", "arrowright", "arrowup", "arrowdown", "r"].includes(key)) {
       return;
     }
     event.preventDefault();
-    targetCameraAzimuthRad += event.key === "ArrowLeft"
-      ? -ORBIT_STEP_RAD
-      : ORBIT_STEP_RAD;
+    if (key === "arrowleft" || key === "arrowright") {
+      targetCameraAzimuthRad += key === "arrowleft" ? ORBIT_STEP_RAD : -ORBIT_STEP_RAD;
+    } else if (key === "arrowup" || key === "arrowdown") {
+      targetCameraZoom = THREE.MathUtils.clamp(
+        targetCameraZoom + (key === "arrowup" ? ZOOM_STEP : -ZOOM_STEP),
+        0,
+        1,
+      );
+    } else {
+      targetCameraAzimuthRad = 0;
+      targetCameraZoom = 0;
+    }
   });
   if (window.latestRocketTelemetry) {
     acceptTelemetry(window.latestRocketTelemetry);
