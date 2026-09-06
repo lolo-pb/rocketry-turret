@@ -1,5 +1,8 @@
 # Rocketry Turret
 
+<img width="1901" height="967" alt="image" src="https://github.com/user-attachments/assets/538fa72a-4b73-420b-9990-5ebd686a5817" />
+
+
 Ground-station antenna tracker for receiving live Featherweight GPS telemetry
 and commanding Arduino-controlled azimuth and elevation servos.
 
