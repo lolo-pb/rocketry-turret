@@ -1,0 +1,1604 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rocketry Turret — Track Control</title>
+  <style>
+    @property --needle-angle {
+      syntax: "<angle>";
+      inherits: false;
+      initial-value: -140deg;
+    }
+
+    :root {
+      color-scheme: dark;
+      font-family: "Arial Narrow", "Roboto Condensed", ui-monospace, monospace;
+      background: #050505;
+      color: #d8d8d8;
+      --phosphor: #f1f3f1;
+      --phosphor-dim: #7b817d;
+      --amber: #f4b642;
+      --danger: #ff584d;
+      --panel: #090909;
+      --panel-deep: #030303;
+      --edge: #3e4240;
+      --ivory: #e4e7e5;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      min-width: 320px;
+      margin: 0;
+      overflow: hidden;
+      background: #030303;
+    }
+
+    .cockpit {
+      width: calc(100% - 12px);
+      height: calc(100% - 12px);
+      margin: 6px auto;
+      border: 1px solid #3e4240;
+      border-radius: 0;
+      background: #080808;
+      box-shadow: none;
+      overflow: hidden;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      align-items: center;
+      gap: 24px;
+      height: 64px;
+      padding: 8px 14px;
+      border-bottom: 1px solid #3e4240;
+      background: #060606;
+      box-shadow: none;
+    }
+
+    .eyebrow,
+    .panel-title,
+    .readout__label,
+    .annunciator,
+    .dial__name,
+    .dial__unit {
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow {
+      color: #7b817d;
+      font-size: 0.66rem;
+    }
+
+    h1 {
+      margin: 3px 0 0;
+      color: #e7e9e7;
+      font-family: inherit;
+      font-size: clamp(1.3rem, 2.4vw, 2rem);
+      font-weight: 700;
+      letter-spacing: 0.09em;
+    }
+
+    .annunciators {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .annunciator {
+      padding: 7px 10px 6px;
+      border: 1px solid #57491f;
+      border-radius: 2px;
+      color: var(--amber);
+      background: transparent;
+      box-shadow: none;
+      font-size: 0.67rem;
+      font-weight: 800;
+    }
+
+    .annunciator.connected {
+      color: var(--phosphor);
+      border-color: #7b817d;
+      background: transparent;
+    }
+
+    .annunciator.disconnected {
+      color: var(--danger);
+      border-color: #7a2923;
+      background: transparent;
+    }
+
+    .mission-clock {
+      min-width: 128px;
+      padding: 7px 11px;
+      border: 1px solid #3e4240;
+      background: #020202;
+      box-shadow: none;
+      text-align: right;
+    }
+
+    .mission-clock span {
+      color: #7b817d;
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+    }
+
+    .mission-clock strong {
+      display: block;
+      margin-top: 2px;
+      color: var(--phosphor);
+      font-size: 1.15rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-shadow: 0 0 5px rgba(241, 243, 241, 0.25);
+    }
+
+    .mission-clock strong,
+    .dial__readout,
+    .velocity-card__value,
+    .readout__value {
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum" 1;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 0.78fr);
+      height: calc(100% - 64px);
+      min-height: 0;
+    }
+
+    .system-panel,
+    .tactical-panel {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      padding: 10px;
+      border-right: 1px solid #3e4240;
+      box-shadow: none;
+    }
+
+    .turret-panel {
+      border-right: 0;
+      box-shadow: none;
+    }
+
+    .panel-title {
+      display: flex;
+      align-items: baseline;
+      gap: 9px;
+      min-height: 28px;
+      margin: 0 0 8px;
+      padding: 5px 8px 4px;
+      border: 0;
+      border-bottom: 1px solid #3e4240;
+      border-left: 2px solid var(--phosphor);
+      color: #d7d9d7;
+      background: transparent;
+      box-shadow: none;
+      font-size: 0.78rem;
+    }
+
+    .panel-title b {
+      color: var(--amber);
+    }
+
+    .panel-title small {
+      margin-left: auto;
+      color: #7b817d;
+      font-size: 0.58rem;
+    }
+
+    .instrument-grid {
+      display: grid;
+      flex: 1;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+      min-height: 0;
+      gap: 8px;
+    }
+
+    .instrument {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-width: 0;
+      min-height: 0;
+      padding: 8px;
+      border: 1px solid #343735;
+      border-radius: 0;
+      background: #050505;
+      box-shadow: none;
+      clip-path: polygon(0 8px, 8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px));
+    }
+
+    .dial {
+      --tick-offset: -1deg;
+      --minor-tick-spacing: 7.5deg;
+      --minor-tick-width: 0.8deg;
+      --minor-tick-inset: 12px;
+      --minor-tick-length: 18px;
+    }
+
+    @media (min-width: 761px) {
+      .dial,
+      .elevation-instrument {
+        container-type: size;
+      }
+    }
+
+    .velocity-stack {
+      display: grid;
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+      min-width: 0;
+      min-height: 0;
+      gap: 8px;
+    }
+
+    .velocity-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 0;
+      padding: clamp(10px, 1.5vw, 22px);
+      border: 1px solid #717773;
+      background: #030303;
+      clip-path: polygon(0 8px, 8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
+    }
+
+    .velocity-card__label {
+      color: #7b817d;
+      font-size: clamp(0.55rem, 0.7vw, 0.72rem);
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .velocity-card__measurement {
+      width: 100%;
+      margin: 9px 0 0 auto;
+      font-size: clamp(1.25rem, 2.1vw, 2.1rem);
+    }
+
+    .velocity-card__value {
+      display: block;
+      width: 100%;
+      padding: 0;
+      border: 0;
+      color: var(--phosphor);
+      background: transparent;
+      font-size: 1em;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .velocity-card__unit {
+      display: block;
+      width: 100%;
+      margin-top: 5px;
+      color: #7b817d;
+      font-size: 0.55rem;
+      letter-spacing: 0.14em;
+      text-align: right;
+      text-transform: uppercase;
+    }
+
+    .screw {
+      display: none;
+    }
+
+    .screw--tl { top: 7px; left: 7px; }
+    .screw--tr { top: 7px; right: 7px; }
+    .screw--bl { bottom: 7px; left: 7px; }
+    .screw--br { right: 7px; bottom: 7px; }
+
+    .dial__face {
+      position: relative;
+      width: min(100%, 255px);
+      width: min(100%, 100cqh, 255px);
+      height: auto;
+      max-width: 100%;
+      margin: 0;
+      aspect-ratio: 1;
+      border: 1px solid #717773;
+      border-radius: 50%;
+      background: #020202;
+      box-shadow: 0 0 0 1px #252825;
+      overflow: hidden;
+    }
+
+    .dial__face::before {
+      content: "";
+      position: absolute;
+      inset: 9%;
+      border-radius: 50%;
+      background: #050505;
+      box-shadow: 0 0 0 1px #2d302e;
+    }
+
+    .dial__face::after {
+      content: "";
+      position: absolute;
+      z-index: 1;
+      inset: var(--minor-tick-inset);
+      border-radius: 50%;
+      background: repeating-conic-gradient(
+        from var(--tick-offset),
+        rgba(241, 243, 241, 0.82) 0 var(--minor-tick-width),
+        transparent var(--minor-tick-width) var(--minor-tick-spacing)
+      );
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--minor-tick-length)), #000 calc(100% - var(--minor-tick-length) + 1px));
+      mask: radial-gradient(farthest-side, transparent calc(100% - var(--minor-tick-length)), #000 calc(100% - var(--minor-tick-length) + 1px));
+      pointer-events: none;
+    }
+
+    .dial__subticks {
+      position: absolute;
+      z-index: 1;
+      inset: var(--subtick-inset);
+      border-radius: 50%;
+      background: repeating-conic-gradient(
+        from var(--subtick-offset),
+        rgba(241, 243, 241, 0.48) 0 var(--subtick-width),
+        transparent var(--subtick-width) var(--subtick-spacing)
+      );
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--subtick-length)), #000 calc(100% - var(--subtick-length) + 1px));
+      mask: radial-gradient(farthest-side, transparent calc(100% - var(--subtick-length)), #000 calc(100% - var(--subtick-length) + 1px));
+      pointer-events: none;
+    }
+
+    .dial__major-ticks {
+      position: absolute;
+      z-index: 2;
+      inset: var(--major-tick-inset);
+      border-radius: 50%;
+      background: repeating-conic-gradient(
+        from var(--tick-offset),
+        rgba(241, 243, 241, 0.95) 0 var(--major-tick-width),
+        transparent var(--major-tick-width) var(--major-tick-spacing)
+      );
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--major-tick-length)), #000 calc(100% - var(--major-tick-length) + 1px));
+      mask: radial-gradient(farthest-side, transparent calc(100% - var(--major-tick-length)), #000 calc(100% - var(--major-tick-length) + 1px));
+      pointer-events: none;
+    }
+
+    .dial__name {
+      position: absolute;
+      z-index: 3;
+      top: 27%;
+      left: 50%;
+      width: 70%;
+      transform: translateX(-50%);
+      color: var(--phosphor);
+      font-size: clamp(0.55rem, 0.7vw, 0.72rem);
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .dial__scale-unit {
+      position: absolute;
+      z-index: 3;
+      top: 34%;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #7b817d;
+      font-size: 0.48rem;
+      letter-spacing: 0.12em;
+      white-space: nowrap;
+    }
+
+    .dial__measurement {
+      position: absolute;
+      z-index: 4;
+      bottom: 30%;
+      left: 35%;
+      width: min(76%, calc(9ch + 18px));
+      transform: translateX(-50%);
+      font-size: clamp(0.82rem, 1.1vw, 1.1rem);
+    }
+
+    .dial__unit {
+      display: block;
+      width: 100%;
+      margin-top: 5px;
+      color: #7b817d;
+      font-size: 0.48rem;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .dial__needle {
+      position: absolute;
+      z-index: 5;
+      left: calc(50% - 1px);
+      bottom: 50%;
+      width: 2px;
+      height: 38%;
+      border-radius: 0;
+      background: var(--amber);
+      box-shadow: 0 0 5px rgba(244, 182, 66, 0.45);
+      opacity: 0.8;
+      transform: rotate(var(--needle-angle, -140deg));
+      transform-origin: 50% 100%;
+      transition: --needle-angle 140ms linear;
+    }
+
+    .dial__needle::after {
+      content: "";
+      position: absolute;
+      top: -3px;
+      left: -3px;
+      width: 8px;
+      height: 15px;
+      clip-path: polygon(50% 0, 100% 100%, 0 100%);
+      background: var(--amber);
+    }
+
+    #heading-dial .dial__needle,
+    #heading-dial .dial__needle::after {
+      background: var(--danger);
+    }
+
+    #heading-dial .dial__needle {
+      box-shadow: 0 0 5px rgba(255, 88, 77, 0.45);
+    }
+
+    #altitude-dial .dial__needle {
+      z-index: 7;
+    }
+
+    #altitude-dial .dial__hub {
+      z-index: 8;
+    }
+
+    .dial__hub {
+      position: absolute;
+      z-index: 6;
+      top: 50%;
+      left: 50%;
+      width: 10px;
+      height: 10px;
+      transform: translate(-50%, -50%);
+      border: 1px solid var(--amber);
+      border-radius: 50%;
+      background: #050505;
+      box-shadow: 0 0 4px rgba(244, 182, 66, 0.35);
+    }
+
+    .dial__readout {
+      display: block;
+      width: 100%;
+      padding: 5px 8px 4px;
+      border: 2px solid var(--phosphor);
+      color: var(--phosphor);
+      background: #020202;
+      box-shadow: none;
+      font-size: 1em;
+      line-height: 1;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .mach-measurement {
+      position: absolute;
+      z-index: 4;
+      bottom: 30%;
+      right: 25%;
+      width: min(40%, calc(3ch + 18px));
+      font-size: clamp(0.82rem, 1.1vw, 1.1rem);
+    }
+
+    .mach-readout {
+      display: block;
+      width: 100%;
+      padding: 5px 8px 4px;
+      border: 2px solid var(--phosphor);
+      color: var(--phosphor);
+      background: #020202;
+      font-size: 1em;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .mach-unit {
+      display: block;
+      width: 100%;
+      margin-top: 5px;
+      color: #7b817d;
+      font-size: 0.48rem;
+      letter-spacing: 0.12em;
+      text-align: center;
+    }
+
+    .scale-mark {
+      position: absolute;
+      z-index: 3;
+      color: var(--ivory);
+      font-family: inherit;
+      font-size: clamp(0.62rem, 1vw, 0.92rem);
+      font-weight: 700;
+      text-shadow: 0 0 4px rgba(241, 243, 241, 0.18);
+    }
+
+    .cycle-mark {
+      inset: 15%;
+      text-align: center;
+      transform: rotate(var(--mark-angle));
+      pointer-events: none;
+    }
+
+    .cycle-mark span {
+      display: inline-block;
+      transform: rotate(var(--label-angle));
+    }
+
+    .mark--nw { top: 20%; left: 18%; }
+    .mark--n  { top: 10%; left: 50%; transform: translateX(-50%); }
+    .mark--ne { top: 20%; right: 18%; }
+    .mark--e  { top: 50%; right: 10%; transform: translateY(-50%); }
+    .mark--se { right: 14%; bottom: 24%; }
+    .mark--s  { bottom: 11%; left: 50%; transform: translateX(-50%); }
+    .mark--sw { bottom: 24%; left: 14%; }
+    .mark--w  { top: 50%; left: 10%; transform: translateY(-50%); }
+
+    .digital-bank {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+      margin-top: 8px;
+      padding: 6px;
+      border: 1px solid #3e4240;
+      background: #030303;
+      box-shadow: none;
+    }
+
+    .readout {
+      min-width: 0;
+      padding: 6px;
+      border-left: 1px solid #3e4240;
+      background: transparent;
+    }
+
+    .readout:first-child {
+      border-left: 0;
+    }
+
+    .readout__label {
+      display: block;
+      color: #7b817d;
+      font-size: 0.55rem;
+    }
+
+    .readout__value {
+      display: block;
+      margin-top: 4px;
+      overflow: hidden;
+      color: var(--phosphor);
+      font-size: clamp(0.72rem, 1vw, 1rem);
+      font-weight: 500;
+      text-overflow: ellipsis;
+      text-shadow: 0 0 5px rgba(241, 243, 241, 0.2);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .tactical-panel {
+      display: flex;
+      flex-direction: column;
+      background: #050505;
+    }
+
+    .viewport {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      border: 1px solid #717773;
+      outline: 0;
+      background:
+        linear-gradient(rgba(241, 243, 241, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(241, 243, 241, 0.045) 1px, transparent 1px),
+        #020202;
+      background-size: 44px 44px, 44px 44px, auto;
+      box-shadow: inset 0 0 0 1px #202321;
+    }
+
+    .track-canvas {
+      position: absolute;
+      z-index: 1;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .track-overlay,
+    .track-fallback {
+      position: absolute;
+      z-index: 3;
+      color: var(--phosphor-dim);
+      font-size: 0.55rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+
+    .track-overlay--legend {
+      top: 15px;
+      right: 16px;
+      display: grid;
+      justify-items: end;
+      gap: 5px;
+    }
+
+    .track-overlay--scale {
+      bottom: 15px;
+      left: 16px;
+    }
+
+    .track-legend__item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .track-legend__dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 5px currentColor;
+    }
+
+    .track-legend__item--launch { color: var(--amber); }
+    .track-legend__item--turret { color: #55d98a; }
+    .track-legend__item--rocket { color: #35d7d2; }
+
+    .track-north {
+      color: var(--phosphor);
+      font-size: 0.7rem;
+    }
+
+    .track-fallback {
+      top: 50%;
+      left: 50%;
+      width: min(80%, 280px);
+      transform: translate(-50%, -50%);
+      color: var(--danger);
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    .viewport::before,
+    .viewport::after {
+      content: "";
+      position: absolute;
+      z-index: 3;
+      width: 48px;
+      height: 48px;
+      border-color: var(--phosphor);
+      opacity: 0.55;
+    }
+
+    .viewport::before {
+      top: 16px;
+      left: 16px;
+      border-top: 1px solid;
+      border-left: 1px solid;
+    }
+
+    .viewport::after {
+      right: 16px;
+      bottom: 16px;
+      border-right: 1px solid;
+      border-bottom: 1px solid;
+    }
+
+    .mfd-footer {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .turret-layout {
+      display: grid;
+      flex: 1;
+      grid-template-rows: minmax(0, 0.72fr) minmax(0, 1.28fr);
+      min-height: 0;
+      gap: 8px;
+    }
+
+    .turret-top {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      min-height: 0;
+      gap: 8px;
+    }
+
+    .turret-top .instrument {
+      width: 100%;
+      height: 100%;
+    }
+
+    .turret-top .dial__face {
+      width: min(100%, 180px);
+      width: min(100%, 100cqh, 180px);
+      height: auto;
+    }
+
+    .turret-top .dial__measurement {
+      width: min(70%, calc(9ch + 14px));
+      font-size: clamp(0.66rem, 0.78vw, 0.82rem);
+    }
+
+    .turret-top .dial__readout {
+      padding: 3px 5px 2px;
+    }
+
+    .turret-top .dial__unit {
+      margin-top: 3px;
+      font-size: 0.4rem;
+    }
+
+    .turret-top .dial__name {
+      font-size: clamp(0.46rem, 0.54vw, 0.58rem);
+      letter-spacing: 0.11em;
+    }
+
+    .turret-top .dial__scale-unit {
+      font-size: 0.4rem;
+    }
+
+    .turret-top .scale-mark {
+      font-size: clamp(0.5rem, 0.6vw, 0.66rem);
+    }
+
+    #range-dial .cycle-mark {
+      inset: 19%;
+    }
+
+    #range-dial .dial__name {
+      top: 32%;
+    }
+
+    #range-dial .dial__scale-unit {
+      top: 39%;
+    }
+
+    .elevation-gauge {
+      position: relative;
+      width: min(100%, 180px);
+      width: min(100%, 100cqh, 180px);
+      height: auto;
+      aspect-ratio: 1;
+    }
+
+    .elevation-gauge__display {
+      position: relative;
+      z-index: 5;
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .elevation-gauge__arc {
+      fill: none;
+      stroke: var(--phosphor);
+      stroke-width: 1.5;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .elevation-gauge__limit {
+      stroke: #7b817d;
+      stroke-width: 2;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .elevation-gauge__tick {
+      stroke: #9ca19d;
+      stroke-width: 1;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .elevation-gauge__tick--major {
+      stroke: var(--phosphor);
+      stroke-width: 1.5;
+    }
+
+    .elevation-gauge__text {
+      fill: #a7aca9;
+      font-family: inherit;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+    }
+
+    .elevation-gauge__angle-label {
+      dominant-baseline: middle;
+      text-anchor: middle;
+    }
+
+    .elevation-gauge__name {
+      position: absolute;
+      z-index: 6;
+      top: 10px;
+      right: 12px;
+      left: 12px;
+      color: #7b817d;
+      font-size: clamp(0.55rem, 0.7vw, 0.7rem);
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-align: right;
+      text-transform: uppercase;
+    }
+
+    .elevation-gauge__needle {
+      opacity: 0.8;
+      transform: rotate(var(--elevation-angle, 0deg));
+      transform-box: view-box;
+      transform-origin: 20px 180px;
+      transition: transform 140ms linear;
+    }
+
+    .elevation-gauge__needle line {
+      stroke: var(--amber);
+      stroke-width: 2;
+      filter: drop-shadow(0 0 3px rgba(244, 182, 66, 0.45));
+      vector-effect: non-scaling-stroke;
+    }
+
+    .elevation-gauge__needle polygon {
+      fill: var(--amber);
+    }
+
+    .elevation-gauge__hub {
+      fill: #050505;
+      stroke: var(--amber);
+      stroke-width: 2;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .elevation-gauge .dial__measurement {
+      right: 50%;
+      bottom: 18%;
+      left: auto;
+      transform: none;
+    }
+
+    .radar-scope {
+      position: relative;
+      display: flex;
+      min-width: 0;
+      min-height: 0;
+      border: 1px solid #717773;
+      background: #020202;
+      clip-path: polygon(0 10px, 10px 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+      overflow: hidden;
+    }
+
+    .radar-header {
+      position: absolute;
+      z-index: 3;
+      top: 10px;
+      right: 12px;
+      bottom: 9px;
+      left: 12px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .radar-label {
+      color: #7b817d;
+      font-size: clamp(0.55rem, 0.7vw, 0.7rem);
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .radar-measurement {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: min(48%, calc(9ch + 18px));
+      font-size: clamp(1.08rem, 1.6vw, 1.45rem);
+    }
+
+    .radar-value {
+      display: block;
+      width: 100%;
+      padding: 5px 8px 4px;
+      border: 2px solid var(--phosphor);
+      color: var(--phosphor);
+      background: #020202;
+      font-size: 1em;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .radar-unit {
+      display: block;
+      width: 100%;
+      margin-top: 5px;
+      color: #7b817d;
+      font-size: 0.55rem;
+      letter-spacing: 0.14em;
+      text-align: right;
+      text-transform: uppercase;
+    }
+
+    .instrument-zero {
+      color: #666c68;
+    }
+
+    .radar-display {
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+    }
+
+    .radar-sector {
+      fill: rgba(241, 243, 241, 0.025);
+      stroke: #717773;
+      stroke-width: 1.5;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .radar-arc,
+    .radar-boundary,
+    .radar-zero {
+      fill: none;
+      stroke: #59605c;
+      stroke-width: 1;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .radar-arc {
+      stroke-dasharray: 3 6;
+    }
+
+    .radar-zero {
+      stroke-dasharray: 7 7;
+    }
+
+    .radar-azimuth {
+      stroke: var(--amber);
+      stroke-width: 2;
+      filter: drop-shadow(0 0 3px rgba(244, 182, 66, 0.45));
+      opacity: 0.8;
+      transform-box: view-box;
+      transform-origin: 50% 47.5%;
+      transition: transform 140ms linear;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .radar-origin {
+      fill: #020202;
+      stroke: var(--amber);
+      stroke-width: 2;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .radar-limit-text {
+      fill: #a7aca9;
+      font-family: inherit;
+      font-size: 15px;
+      letter-spacing: 0.08em;
+    }
+
+    .radar-sweep-text {
+      position: absolute;
+      right: 12px;
+      bottom: 9px;
+      color: #7b817d;
+      font-size: 0.58rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .system-note {
+      margin: 8px 4px 0;
+      color: #747a76;
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      line-height: 1.5;
+      text-transform: uppercase;
+    }
+
+    @media (max-width: 760px) {
+      html,
+      body {
+        height: auto;
+        min-height: 100%;
+        overflow: auto;
+      }
+
+      .cockpit {
+        width: min(100% - 12px, 620px);
+        height: auto;
+        min-height: calc(100vh - 12px);
+        margin: 6px auto;
+      }
+
+      .dashboard-grid {
+        display: block;
+        height: auto;
+      }
+
+      .instrument-grid {
+        grid-template-rows: auto;
+      }
+
+      .dial__face {
+        width: 100%;
+        height: auto;
+      }
+
+      .turret-top .dial__face {
+        width: 100%;
+        height: auto;
+      }
+
+      .elevation-gauge {
+        width: 100%;
+        height: auto;
+      }
+
+      .system-panel,
+      .tactical-panel {
+        border-right: 0;
+        border-bottom: 2px solid #080808;
+        box-shadow: inset 0 -1px #484b49;
+      }
+
+      .viewport {
+        min-height: 420px;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .topbar {
+        height: auto;
+        min-height: 64px;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+      }
+
+      .annunciators {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        justify-content: flex-start;
+      }
+
+    }
+
+    @media (max-width: 480px) {
+      .instrument-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .digital-bank {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="cockpit">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">Ground intercept system</div>
+        <h1>Rocketry Turret · Track Control</h1>
+      </div>
+      <div class="annunciators">
+        <span id="connection" class="annunciator disconnected">Data link offline</span>
+        <span class="annunciator">Simulation</span>
+      </div>
+      <div class="mission-clock">
+        <span>Flight time</span>
+        <strong id="elapsed_s">000.0 s</strong>
+      </div>
+    </header>
+
+    <main class="dashboard-grid">
+      <section class="system-panel rocket-panel" aria-labelledby="rocket-title">
+        <h2 class="panel-title" id="rocket-title">
+          <b>01</b> Rocket / flight vehicle
+          <small>Motion + navigation</small>
+        </h2>
+
+        <div class="instrument-grid">
+          <div class="instrument dial" id="altitude-dial" data-min="0" data-max="1000" data-start-angle="0" data-sweep-angle="360" data-wrap-range="1000" data-tick-offset="-0.5" data-minor-tick-spacing="36" data-minor-tick-width="1" data-subtick-offset="-0.175" data-subtick-spacing="3.6" data-subtick-width="0.35" data-subtick-inset="12" data-subtick-length="9" data-major-tick-spacing="360" data-major-tick-width="1.5" data-major-tick-inset="12" data-major-tick-length="18">
+            <i class="screw screw--tl"></i><i class="screw screw--tr"></i>
+            <i class="screw screw--bl"></i><i class="screw screw--br"></i>
+            <div class="dial__face">
+              <span class="dial__name">Rocket altitude</span>
+              <span class="dial__scale-unit">1000 M</span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 0deg; --label-angle: 0deg"><span>0</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 36deg; --label-angle: -36deg"><span>1</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 72deg; --label-angle: -72deg"><span>2</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 108deg; --label-angle: -108deg"><span>3</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 144deg; --label-angle: -144deg"><span>4</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 180deg; --label-angle: -180deg"><span>5</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 216deg; --label-angle: -216deg"><span>6</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 252deg; --label-angle: -252deg"><span>7</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 288deg; --label-angle: -288deg"><span>8</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 324deg; --label-angle: -324deg"><span>9</span></span>
+              <div class="dial__needle"></div><div class="dial__hub"></div>
+              <div class="dial__measurement">
+                <output class="dial__readout" id="altitude_m">00000.0</output>
+                <span class="dial__unit">M</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="instrument dial" id="heading-dial" data-min="-180" data-max="180" data-start-angle="-180" data-sweep-angle="360" data-tick-offset="-0.4" data-minor-tick-spacing="45" data-minor-tick-width="0.8" data-subtick-offset="-0.2" data-subtick-spacing="22.5" data-subtick-width="0.4" data-subtick-inset="12" data-subtick-length="9">
+            <i class="screw screw--tl"></i><i class="screw screw--tr"></i>
+            <i class="screw screw--bl"></i><i class="screw screw--br"></i>
+            <div class="dial__face">
+              <span class="dial__name">Rocket heading</span>
+              <span class="scale-mark mark--n">N</span><span class="scale-mark mark--e">E</span>
+              <span class="scale-mark mark--s">S</span><span class="scale-mark mark--w">W</span>
+              <div class="dial__needle"></div><div class="dial__hub"></div>
+              <div class="dial__measurement">
+                <output class="dial__readout" id="heading_deg">00000.0</output>
+                <span class="dial__unit">DEG</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="instrument dial" id="speed-dial" data-min="0" data-max="100" data-start-angle="0" data-sweep-angle="360" data-wrap-range="100" data-tick-offset="-0.5" data-minor-tick-spacing="36" data-minor-tick-width="1" data-subtick-offset="-0.175" data-subtick-spacing="3.6" data-subtick-width="0.35" data-subtick-inset="12" data-subtick-length="9" data-major-tick-spacing="360" data-major-tick-width="1.5" data-major-tick-inset="12" data-major-tick-length="18">
+            <i class="screw screw--tl"></i><i class="screw screw--tr"></i>
+            <i class="screw screw--bl"></i><i class="screw screw--br"></i>
+            <div class="dial__face">
+              <span class="dial__name">Rocket speed</span>
+              <span class="dial__scale-unit">100 M/S</span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 0deg; --label-angle: 0deg"><span>0</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 36deg; --label-angle: -36deg"><span>1</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 72deg; --label-angle: -72deg"><span>2</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 108deg; --label-angle: -108deg"><span>3</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 144deg; --label-angle: -144deg"><span>4</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 180deg; --label-angle: -180deg"><span>5</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 216deg; --label-angle: -216deg"><span>6</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 252deg; --label-angle: -252deg"><span>7</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 288deg; --label-angle: -288deg"><span>8</span></span>
+              <span class="scale-mark cycle-mark" style="--mark-angle: 324deg; --label-angle: -324deg"><span>9</span></span>
+              <div class="dial__needle"></div><div class="dial__hub"></div>
+              <div class="dial__measurement">
+                <output class="dial__readout" id="speed_m_s">00000.0</output>
+                <span class="dial__unit">M/S</span>
+              </div>
+              <div class="mach-measurement">
+                <output class="mach-readout" id="mach_number">0.0</output>
+                <span class="mach-unit">MACH</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="velocity-stack">
+            <div class="velocity-card">
+              <span class="velocity-card__label">Rocket vertical speed</span>
+              <div class="velocity-card__measurement">
+                <output class="velocity-card__value" id="vertical_speed_m_s">00000.0</output>
+                <span class="velocity-card__unit">M/S</span>
+              </div>
+            </div>
+            <div class="velocity-card">
+              <span class="velocity-card__label">Rocket horizontal speed</span>
+              <div class="velocity-card__measurement">
+                <output class="velocity-card__value" id="horizontal_speed_m_s">00000.0</output>
+                <span class="velocity-card__unit">M/S</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="digital-bank">
+          <div class="readout"><span class="readout__label">Vertical acceleration</span><strong class="readout__value" id="acceleration_m_s2">0.0 m/s²</strong></div>
+          <div class="readout"><span class="readout__label">G force</span><strong class="readout__value" id="g_force">0.0 G</strong></div>
+          <div class="readout"><span class="readout__label">Satellites</span><strong class="readout__value" id="satellites">—</strong></div>
+          <div class="readout"><span class="readout__label">Signal bands</span><strong class="readout__value" id="satellite_signal">—</strong></div>
+          <div class="readout"><span class="readout__label">Packet integrity</span><strong class="readout__value" id="crc_status">—</strong></div>
+          <div class="readout"><span class="readout__label">GPS fix</span><strong class="readout__value" id="gps_fix">—</strong></div>
+        </div>
+      </section>
+
+      <section class="tactical-panel" aria-labelledby="tactical-title">
+        <h2 class="panel-title" id="tactical-title">
+          <b>02</b> Three-dimensional track
+          <small>GPS / ENU simulation</small>
+        </h2>
+        <div class="viewport" id="three-d-viewport" aria-label="Three-dimensional GPS tracking view">
+          <canvas class="track-canvas" id="track-canvas"></canvas>
+          <div class="track-overlay track-overlay--legend" aria-hidden="true">
+            <span class="track-north">N ↑</span>
+            <span class="track-legend__item track-legend__item--launch"><i class="track-legend__dot"></i>Launch</span>
+            <span class="track-legend__item track-legend__item--turret"><i class="track-legend__dot"></i>Turret</span>
+            <span class="track-legend__item track-legend__item--rocket"><i class="track-legend__dot"></i>Rocket</span>
+          </div>
+          <span class="track-overlay track-overlay--scale" id="track-grid-scale" aria-hidden="true">Grid: —</span>
+        </div>
+        <div class="mfd-footer">
+          <div class="readout"><span class="readout__label">Telemetry source</span><strong class="readout__value" id="source">—</strong></div>
+          <div class="readout"><span class="readout__label">Vehicle identity</span><strong class="readout__value" id="tracker">—</strong></div>
+        </div>
+      </section>
+
+      <section class="system-panel turret-panel" aria-labelledby="turret-title">
+        <h2 class="panel-title" id="turret-title">
+          <b>03</b> Turret / ground system
+          <small>Line of sight</small>
+        </h2>
+
+        <div class="turret-layout">
+          <div class="turret-top">
+            <div class="instrument elevation-instrument" id="elevation-gauge">
+              <i class="screw screw--tl"></i><i class="screw screw--tr"></i>
+              <i class="screw screw--bl"></i><i class="screw screw--br"></i>
+              <span class="elevation-gauge__name">Turret elevation</span>
+              <div class="elevation-gauge">
+                <svg class="elevation-gauge__display" viewBox="0 0 210 210" role="img" aria-label="Turret elevation from the ground horizon at zero degrees to vertical at ninety degrees">
+                  <path class="elevation-gauge__arc" d="M 180 180 A 160 160 0 0 0 20 20"></path>
+                  <line class="elevation-gauge__limit" x1="20" y1="180" x2="195" y2="180"></line>
+                  <line class="elevation-gauge__limit" x1="20" y1="180" x2="20" y2="5"></line>
+                  <g>
+                    <line class="elevation-gauge__tick" x1="170" y1="180" x2="180" y2="180" transform="rotate(-10 20 180)"></line>
+                    <line class="elevation-gauge__tick" x1="170" y1="180" x2="180" y2="180" transform="rotate(-20 20 180)"></line>
+                    <line class="elevation-gauge__tick elevation-gauge__tick--major" x1="165" y1="180" x2="180" y2="180" transform="rotate(-30 20 180)"></line>
+                    <line class="elevation-gauge__tick" x1="170" y1="180" x2="180" y2="180" transform="rotate(-40 20 180)"></line>
+                    <line class="elevation-gauge__tick" x1="170" y1="180" x2="180" y2="180" transform="rotate(-50 20 180)"></line>
+                    <line class="elevation-gauge__tick elevation-gauge__tick--major" x1="165" y1="180" x2="180" y2="180" transform="rotate(-60 20 180)"></line>
+                    <line class="elevation-gauge__tick" x1="170" y1="180" x2="180" y2="180" transform="rotate(-70 20 180)"></line>
+                    <line class="elevation-gauge__tick" x1="170" y1="180" x2="180" y2="180" transform="rotate(-80 20 180)"></line>
+                  </g>
+                  <text class="elevation-gauge__text elevation-gauge__angle-label" x="194" y="168">0°</text>
+                  <text class="elevation-gauge__text elevation-gauge__angle-label" x="171" y="93">30°</text>
+                  <text class="elevation-gauge__text elevation-gauge__angle-label" x="107" y="29">60°</text>
+                  <text class="elevation-gauge__text elevation-gauge__angle-label" x="32" y="6">90°</text>
+                  <text class="elevation-gauge__text" x="139" y="198">GROUND</text>
+                  <g class="elevation-gauge__needle" id="elevation-indicator">
+                    <line x1="20" y1="180" x2="160" y2="180"></line>
+                    <polygon points="166,180 153,174 153,186"></polygon>
+                  </g>
+                  <circle class="elevation-gauge__hub" cx="20" cy="180" r="5"></circle>
+                </svg>
+                <div class="dial__measurement">
+                  <output class="dial__readout" id="tilt_deg">00000.0</output>
+                  <span class="dial__unit">DEG</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="instrument dial" id="range-dial" data-min="0" data-max="1000" data-start-angle="0" data-sweep-angle="360" data-wrap-range="1000" data-tick-offset="-0.5" data-minor-tick-spacing="36" data-minor-tick-width="1" data-subtick-offset="-0.175" data-subtick-spacing="3.6" data-subtick-width="0.35" data-subtick-inset="12" data-subtick-length="9" data-major-tick-spacing="360" data-major-tick-width="1.5" data-major-tick-inset="12" data-major-tick-length="18">
+              <i class="screw screw--tl"></i><i class="screw screw--tr"></i>
+              <i class="screw screw--bl"></i><i class="screw screw--br"></i>
+              <div class="dial__face">
+                <span class="dial__name">Target range</span>
+                <span class="dial__scale-unit">1000 M</span>
+                <span class="scale-mark cycle-mark" style="--mark-angle: 0deg; --label-angle: 0deg"><span>0</span></span>
+                <span class="scale-mark cycle-mark" style="--mark-angle: 36deg; --label-angle: -36deg"><span>1</span></span>
+                <span class="scale-mark cycle-mark" style="--mark-angle: 72deg; --label-angle: -72deg"><span>2</span></span>
+                <span class="scale-mark cycle-mark" style="--mark-angle: 108deg; --label-angle: -108deg"><span>3</span></span>
+                <span class="scale-mark cycle-mark" style="--mark-angle: 144deg; --label-angle: -144deg"><span>4</span></span>
+                <span class="scale-mark cycle-mark" style="--mark-angle: 180deg; --label-angle: -180deg"><span>5</span></span>
+                <span class="scale-mark cycle-mark" style="--mark-angle: 216deg; --label-angle: -216deg"><span>6</span></span>
+                <span class="scale-mark cycle-mark" style="--mark-angle: 252deg; --label-angle: -252deg"><span>7</span></span>
+                <span class="scale-mark cycle-mark" style="--mark-angle: 288deg; --label-angle: -288deg"><span>8</span></span>
+                <span class="scale-mark cycle-mark" style="--mark-angle: 324deg; --label-angle: -324deg"><span>9</span></span>
+                <div class="dial__needle"></div><div class="dial__hub"></div>
+                <div class="dial__measurement">
+                  <output class="dial__readout" id="distance_m">00000.0</output>
+                  <span class="dial__unit">M</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="radar-scope">
+            <div class="radar-header">
+              <span class="radar-label">Turret azimuth</span>
+              <div class="radar-measurement">
+                <output class="radar-value" id="yaw_deg">00000.0</output>
+                <span class="radar-unit">DEG</span>
+              </div>
+            </div>
+            <svg class="radar-display" viewBox="0 0 400 400" role="img" aria-label="Turret mechanical azimuth sector and current pointing direction">
+              <path class="radar-sector" id="radar-sector"></path>
+              <g id="radar-range-arcs"></g>
+              <line class="radar-boundary" id="radar-min-boundary" x1="200" y1="190"></line>
+              <line class="radar-boundary" id="radar-max-boundary" x1="200" y1="190"></line>
+              <line class="radar-zero" x1="200" y1="190" x2="200" y2="25"></line>
+              <line class="radar-azimuth" id="radar-azimuth" x1="200" y1="190" x2="200" y2="25"></line>
+              <circle class="radar-origin" cx="200" cy="190" r="5"></circle>
+              <text class="radar-limit-text" id="radar-min-label"></text>
+              <text class="radar-limit-text" id="radar-max-label"></text>
+              <text class="radar-limit-text" x="207" y="20">0° FRONT</text>
+            </svg>
+            <span class="radar-sweep-text">Mechanical sweep · 270°</span>
+          </div>
+        </div>
+
+        <p class="system-note">
+          Turret azimuth and elevation are pointing commands. Rocket heading is isolated in the flight-vehicle panel.
+        </p>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // Copied from antenna_controller.ino. These are intentionally not sampled
+    // from the telemetry stream or inferred from the simulated values.
+    const TURRET_AZ_MIN_DEG = 0;
+    const TURRET_AZ_MAX_DEG = 270;
+    const TURRET_AZ_OFFSET_DEG = 110;
+    const TURRET_AZ_DIRECTION = 1;
+    const RADAR_CENTER = { x: 200, y: 190 };
+    const RADAR_RADIUS = 165;
+    const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
+    const SPEED_OF_SOUND_M_S = 343;
+    const STANDARD_GRAVITY_M_S2 = 9.80665;
+    const ELEVATION_MIN_DEG = 0;
+    const ELEVATION_MAX_DEG = 90;
+
+    function setOptionalDialVariable(dial, dataName, propertyName, unit) {
+      const value = dial.dataset[dataName];
+      if (value !== undefined) {
+        dial.style.setProperty(propertyName, `${value}${unit}`);
+      }
+    }
+
+    function configureDial(dial) {
+      setOptionalDialVariable(dial, "tickOffset", "--tick-offset", "deg");
+      setOptionalDialVariable(dial, "minorTickSpacing", "--minor-tick-spacing", "deg");
+      setOptionalDialVariable(dial, "minorTickWidth", "--minor-tick-width", "deg");
+      setOptionalDialVariable(dial, "minorTickInset", "--minor-tick-inset", "px");
+      setOptionalDialVariable(dial, "minorTickLength", "--minor-tick-length", "px");
+
+      if (dial.dataset.subtickSpacing !== undefined) {
+        setOptionalDialVariable(dial, "subtickOffset", "--subtick-offset", "deg");
+        setOptionalDialVariable(dial, "subtickSpacing", "--subtick-spacing", "deg");
+        setOptionalDialVariable(dial, "subtickWidth", "--subtick-width", "deg");
+        setOptionalDialVariable(dial, "subtickInset", "--subtick-inset", "px");
+        setOptionalDialVariable(dial, "subtickLength", "--subtick-length", "px");
+
+        const subticks = document.createElement("span");
+        subticks.className = "dial__subticks";
+        dial.querySelector(".dial__face").appendChild(subticks);
+      }
+
+      if (dial.dataset.majorTickSpacing === undefined) {
+        return;
+      }
+
+      dial.style.setProperty("--major-tick-spacing", `${dial.dataset.majorTickSpacing}deg`);
+      dial.style.setProperty("--major-tick-width", `${dial.dataset.majorTickWidth ?? 1.4}deg`);
+      dial.style.setProperty("--major-tick-inset", `${dial.dataset.majorTickInset ?? 12}px`);
+      dial.style.setProperty("--major-tick-length", `${dial.dataset.majorTickLength ?? 26}px`);
+
+      const majorTicks = document.createElement("span");
+      majorTicks.className = "dial__major-ticks";
+      dial.querySelector(".dial__face").appendChild(majorTicks);
+    }
+
+    function configureDials() {
+      document.querySelectorAll(".dial").forEach(configureDial);
+    }
+
+    function setDial(id, value) {
+      const dial = document.getElementById(id);
+      const minimum = Number(dial.dataset.min);
+      const maximum = Number(dial.dataset.max);
+      const start = Number(dial.dataset.startAngle);
+      const sweep = Number(dial.dataset.sweepAngle);
+      const wrapRange = Number(dial.dataset.wrapRange);
+      const valueRange = wrapRange > 0 ? wrapRange : maximum - minimum;
+      const progress = (value - minimum) / valueRange;
+      dial.querySelector(".dial__needle").style.setProperty(
+        "--needle-angle",
+        `${start + progress * sweep}deg`,
+      );
+    }
+
+    function fixed(value, unit = "") {
+      return `${Number(value).toFixed(1)}${unit}`;
+    }
+
+    function machValue(speedMps) {
+      return (Number(speedMps) / SPEED_OF_SOUND_M_S).toFixed(1);
+    }
+
+    function instrumentValue(value) {
+      const number = Number(value);
+      const sign = number < 0 ? "-" : "";
+      const [integer, decimal] = Math.abs(number).toFixed(1).split(".");
+      return `${sign}${integer.padStart(5, "0")}.${decimal}`;
+    }
+
+    function renderInstrumentValue(output, formattedValue) {
+      const fragment = document.createDocumentFragment();
+      const integerStart = formattedValue.startsWith("-") ? 1 : 0;
+      const decimalPoint = formattedValue.indexOf(".");
+      const firstNonZero = formattedValue.slice(integerStart, decimalPoint).search(/[1-9]/);
+      const significantStart = firstNonZero === -1
+        ? decimalPoint - 1
+        : integerStart + firstNonZero;
+
+      [...formattedValue].forEach((character, index) => {
+        if (character === "0" && index < significantStart) {
+          const zero = document.createElement("span");
+          zero.className = "instrument-zero";
+          zero.textContent = character;
+          fragment.appendChild(zero);
+        } else {
+          fragment.appendChild(document.createTextNode(character));
+        }
+      });
+
+      output.replaceChildren(fragment);
+    }
+
+    function setInstrumentValue(id, value) {
+      renderInstrumentValue(document.getElementById(id), instrumentValue(value));
+    }
+
+    function radarPoint(angle, radius = RADAR_RADIUS) {
+      const radians = angle * Math.PI / 180;
+      return {
+        x: RADAR_CENTER.x + Math.sin(radians) * radius,
+        y: RADAR_CENTER.y - Math.cos(radians) * radius,
+      };
+    }
+
+    function radarArcPath(radius, minimumYaw, maximumYaw) {
+      const start = radarPoint(minimumYaw, radius);
+      const end = radarPoint(maximumYaw, radius);
+      const largeArc = maximumYaw - minimumYaw > 180 ? 1 : 0;
+      return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArc} 1 ${end.x} ${end.y}`;
+    }
+
+    function turretYawLimits() {
+      const first = (TURRET_AZ_MIN_DEG - TURRET_AZ_OFFSET_DEG) / TURRET_AZ_DIRECTION;
+      const second = (TURRET_AZ_MAX_DEG - TURRET_AZ_OFFSET_DEG) / TURRET_AZ_DIRECTION;
+      return [Math.min(first, second), Math.max(first, second)];
+    }
+
+    function setBoundary(id, point) {
+      const line = document.getElementById(id);
+      line.setAttribute("x2", point.x);
+      line.setAttribute("y2", point.y);
+    }
+
+    function placeLimitLabel(id, angle, suffix) {
+      const label = document.getElementById(id);
+      const point = radarPoint(angle, RADAR_RADIUS - 4);
+      label.setAttribute("x", point.x + (point.x < RADAR_CENTER.x ? 8 : -8));
+      label.setAttribute("y", point.y + (point.y < RADAR_CENTER.y ? -8 : 20));
+      label.setAttribute("text-anchor", point.x < RADAR_CENTER.x ? "start" : "end");
+      label.textContent = `${angle}° ${suffix}`;
+    }
+
+    function configureRadar() {
+      const [minimumYaw, maximumYaw] = turretYawLimits();
+      const start = radarPoint(minimumYaw);
+      const end = radarPoint(maximumYaw);
+      const largeArc = maximumYaw - minimumYaw > 180 ? 1 : 0;
+
+      document.getElementById("radar-sector").setAttribute(
+        "d",
+        `M ${RADAR_CENTER.x} ${RADAR_CENTER.y} L ${start.x} ${start.y} ` +
+        `A ${RADAR_RADIUS} ${RADAR_RADIUS} 0 ${largeArc} 1 ${end.x} ${end.y} Z`,
+      );
+      setBoundary("radar-min-boundary", start);
+      setBoundary("radar-max-boundary", end);
+      placeLimitLabel("radar-min-label", minimumYaw, "MIN");
+      placeLimitLabel("radar-max-label", maximumYaw, "MAX");
+
+      const arcs = document.getElementById("radar-range-arcs");
+      for (const radius of [55, 110]) {
+        const path = document.createElementNS(SVG_NAMESPACE, "path");
+        path.setAttribute("class", "radar-arc");
+        path.setAttribute("d", radarArcPath(radius, minimumYaw, maximumYaw));
+        arcs.appendChild(path);
+      }
+    }
+
+    function setRadarAzimuth(yaw) {
+      const physicalAngle = Math.max(
+        TURRET_AZ_MIN_DEG,
+        Math.min(TURRET_AZ_MAX_DEG, TURRET_AZ_OFFSET_DEG + TURRET_AZ_DIRECTION * yaw),
+      );
+      const constrainedYaw = (physicalAngle - TURRET_AZ_OFFSET_DEG) / TURRET_AZ_DIRECTION;
+      document.getElementById("radar-azimuth").style.transform = `rotate(${constrainedYaw}deg)`;
+      return constrainedYaw;
+    }
+
+    function setElevationGauge(elevation) {
+      const constrainedElevation = Math.max(
+        ELEVATION_MIN_DEG,
+        Math.min(ELEVATION_MAX_DEG, elevation),
+      );
+      document.getElementById("elevation-indicator").style.setProperty(
+        "--elevation-angle",
+        `${-constrainedElevation}deg`,
+      );
+    }
+
+    function updateTelemetry(telemetry) {
+      document.getElementById("elapsed_s").textContent = fixed(telemetry.elapsed_s, " s");
+      setInstrumentValue("altitude_m", telemetry.altitude_m);
+      setInstrumentValue("speed_m_s", telemetry.speed_m_s);
+      document.getElementById("mach_number").textContent = machValue(telemetry.speed_m_s);
+      setInstrumentValue("vertical_speed_m_s", telemetry.vertical_speed_m_s);
+      setInstrumentValue("heading_deg", telemetry.heading_deg);
+      setInstrumentValue("horizontal_speed_m_s", telemetry.horizontal_speed_m_s);
+      document.getElementById("acceleration_m_s2").textContent = fixed(telemetry.acceleration_m_s2, " m/s²");
+      document.getElementById("g_force").textContent = fixed(
+        telemetry.acceleration_m_s2 / STANDARD_GRAVITY_M_S2,
+        " G",
+      );
+      setInstrumentValue("yaw_deg", setRadarAzimuth(telemetry.yaw_deg));
+      setInstrumentValue("tilt_deg", telemetry.tilt_deg);
+      setInstrumentValue("distance_m", telemetry.distance_m);
+      document.getElementById("gps_fix").textContent = `${telemetry.gps_fix}D FIX`;
+      document.getElementById("satellites").textContent = `${telemetry.satellites} TRACKED`;
+      document.getElementById("satellite_signal").textContent =
+        `${telemetry.satellites_24db} / ${telemetry.satellites_32db} / ${telemetry.satellites_40db}`;
+      document.getElementById("crc_status").textContent = telemetry.crc_ok ? "CRC OK" : "CRC ERROR";
+      document.getElementById("source").textContent = telemetry.source.toUpperCase();
+      document.getElementById("tracker").textContent = `${telemetry.packet_type} · ${telemetry.tracker_id}`;
+
+      setDial("altitude-dial", telemetry.altitude_m);
+      setDial("speed-dial", telemetry.speed_m_s);
+      setDial("heading-dial", telemetry.heading_deg);
+      setElevationGauge(telemetry.tilt_deg);
+      setDial("range-dial", telemetry.distance_m);
+      window.latestRocketTelemetry = telemetry;
+      window.dispatchEvent(new CustomEvent("rocket-telemetry", { detail: telemetry }));
+    }
+
+    function connect() {
+      const protocol = location.protocol === "https:" ? "wss" : "ws";
+      const socket = new WebSocket(`${protocol}://${location.host}/ws/telemetry`);
+      const connection = document.getElementById("connection");
+
+      socket.onopen = () => {
+        connection.textContent = "Data link online";
+        connection.className = "annunciator connected";
+      };
+
+      socket.onmessage = (event) => updateTelemetry(JSON.parse(event.data));
+
+      socket.onclose = () => {
+        connection.textContent = "Data link offline";
+        connection.className = "annunciator disconnected";
+        setTimeout(connect, 1000);
+      };
+    }
+
+    configureDials();
+    configureRadar();
+    document.querySelectorAll(".dial__readout, .velocity-card__value, .radar-value").forEach(
+      (output) => renderInstrumentValue(output, output.textContent),
+    );
+    connect();
+  </script>
+  <script type="module" src="/static/track-view.js"></script>
+</body>
+</html>
