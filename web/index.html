@@ -1539,7 +1539,7 @@
         Math.min(TURRET_AZ_MAX_DEG, TURRET_AZ_OFFSET_DEG + TURRET_AZ_DIRECTION * yaw),
       );
       const constrainedYaw = (physicalAngle - TURRET_AZ_OFFSET_DEG) / TURRET_AZ_DIRECTION;
-      document.getElementById("radar-azimuth").style.transform = `rotate(${constrainedYaw}deg)`;
+      document.getElementById("radar-azimuth").style.transform = `rotate(${-constrainedYaw}deg)`;
       return constrainedYaw;
     }
 
