@@ -58,10 +58,8 @@ Event tracker_update(struct Controller *controller, struct ServoOutput *servos) 
   struct timespec now;
   if (clock_gettime(CLOCK_MONOTONIC, &now) < 0) return NO_EVENT;
   int64_t now_ms = (int64_t)now.tv_sec * 1000 + now.tv_nsec / 1000000;
-  turret->next_step_ms = now_ms + STEP_INTERVAL_MS;
-  
-
   if (now_ms < turret->next_step_ms) return NO_EVENT;
+  turret->next_step_ms = now_ms + STEP_INTERVAL_MS;
 
   if (rocket_state.telemetry.tracker_fix) update_target(turret, &rocket_state.telemetry);
   
