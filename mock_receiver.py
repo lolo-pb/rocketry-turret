@@ -1,28 +1,13 @@
-"""Local dashboard server with a deterministic simulated rocket flight."""
+"""Simulated flight and Featherweight receiver output."""
 
-import asyncio
-import contextlib
+import argparse
 import math
-import threading
 import time
-import urllib.error
-import urllib.request
-import webbrowser
-from contextlib import asynccontextmanager
-from pathlib import Path
 
-import uvicorn
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
-
-
-HOST = "127.0.0.1"
-PORT = 8000
 UPDATE_HZ = 10
 PLAYBACK_SPEED = 1.0
 PRELAUNCH_HOLD_S = 10.0
-WEB_DIR = Path(__file__).parent / "web"
+
 EARTH_RADIUS_M = 6378137.0
 GROUND_STATION_LATITUDE_DEG = 31.95610
 GROUND_STATION_LONGITUDE_DEG = -102.40344
@@ -49,8 +34,6 @@ KEYFRAMES = [
     ( 250.0,    0.0,  0.0,  84.9,   0.0,  15.5,  0.0, 1437.0, 3, 15, 10, 0, 0),
     ( 266.4,    0.0,  0.0,  84.9,   0.0,  15.5,  0.0, 1437.0, 3, 15, 10, 0, 0),
 ]
-
-latest_telemetry = {}
 
 
 def simulation_time_at(sequence):
@@ -136,69 +119,29 @@ def telemetry_at(sim_time, sequence):
     }
 
 
-async def run_simulation():
-    global latest_telemetry
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("receiver", help="FIFO path read by the C controller")
+    args = parser.parse_args()
+
     sequence = 0
-
-    while True:
-        sim_time = simulation_time_at(sequence)
-        latest_telemetry = telemetry_at(sim_time, sequence)
-        sequence += 1
-        await asyncio.sleep(1 / UPDATE_HZ)
-
-
-@asynccontextmanager
-async def lifespan(_app):
-    task = asyncio.create_task(run_simulation())
     try:
-        yield
-    finally:
-        task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await task
-
-
-app = FastAPI(lifespan=lifespan)
-app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
-
-
-@app.get("/")
-async def index():
-    return FileResponse(WEB_DIR / "index.html")
-
-
-@app.get("/health")
-async def health():
-    return {"status": "ok", "source": "simulation"}
-
-
-@app.websocket("/ws/telemetry")
-async def telemetry_socket(websocket: WebSocket):
-    await websocket.accept()
-    last_sequence = -1
-    try:
-        while True:
-            sample = latest_telemetry
-            if sample and sample["sequence"] != last_sequence:
-                await websocket.send_json(sample)
-                last_sequence = sample["sequence"]
-            await asyncio.sleep(1 / UPDATE_HZ / 2)
-    except WebSocketDisconnect:
+        with open(args.receiver, "w", buffering=1, encoding="ascii") as receiver:
+            while True:
+                sample = telemetry_at(simulation_time_at(sequence), sequence)
+                altitude_ft = round(sample["rocket_altitude_asl_m"] / 0.3048)
+                receiver.write(
+                    f"@ GPS_STAT 0 0 0 0 00:00 CRC_OK TRK SIMULATED "
+                    f"Alt {altitude_ft} lt {sample['rocket_latitude_deg']:.7f} "
+                    f"ln {sample['rocket_longitude_deg']:.7f} "
+                    f"Vel 0 0 0 Fix 3 # 0 0 0 0\n"
+                )
+                sequence += 1
+                time.sleep(1 / UPDATE_HZ)
+    except (KeyboardInterrupt, BrokenPipeError):
         pass
 
 
-def open_browser_when_ready():
-    health_url = f"http://{HOST}:{PORT}/health"
-    deadline = time.monotonic() + 10
-    while time.monotonic() < deadline:
-        try:
-            with urllib.request.urlopen(health_url, timeout=0.25):
-                webbrowser.open(f"http://{HOST}:{PORT}")
-                return
-        except (urllib.error.URLError, OSError):
-            time.sleep(0.1)
-
-
 if __name__ == "__main__":
-    threading.Thread(target=open_browser_when_ready, daemon=True).start()
-    uvicorn.run(app, host=HOST, port=PORT)
+    main()

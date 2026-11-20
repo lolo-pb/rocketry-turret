@@ -1,61 +1,29 @@
 # Rocketry Turret — Lolo Agent Notes
 
-## Current flow
+## TODO
 
-Live tracker:
+- [ ] `controller/manual.c` — manual acquisition
+- [ ] `controller/automatic.c` — automatic acquisition
+- [/] `controller/tracker.c` — locked tracking
 
-```text
-Featherweight receiver -> tracker.py -> Arduino -> servos
-```
+- [ ] REview reciever logic. maybe a khalman filter
 
-`tracker.py` parses `GPS_STAT`, rejects large position jumps, calculates turret yaw/elevation, logs CSV, and sends `Y...` / `T...` commands. `antenna_controller.ino` applies servo offsets, direction, speed, and mechanical limits.
+- [ ] Read live USB receivers on the Pi.
+- [ ] Validate packet integrity and tracker ID.
 
-Dashboard test:
+- [ ] Connect the dashboard to the controller socket.
+- [ ] Serve the dashboard headlessly on the private network.
 
-```text
-dashboard.py simulation -> WebSocket -> web/index.html
-```
+- [ ] Add Commanding and Viewing roles for multiple laptops.
+- [ ] Show setup, arm, and tracking states on the dashboard.
 
-Run with `python dashboard.py`. It plays a repeating TeleMega-based flight at 10 updates per second. It does not run `tracker.py`, open serial ports, or command the turret.
+- [ ] Define landing detection and show the estimated landing position.
 
-3D camera controls: left/right orbit; up zooms toward the rocket; down zooms out and brings all three markers into view; `R` resets the overview. Marker size stays readable while zooming.
+## Things to keep in mind
 
-## Dashboard data rule
+How the controller connects to the usb recievers,
+How the controller reads fro the recievers and not make that blocking,<Importan!/>
 
-All changing measurements must come from data available to `tracker.py`, or be calculated from that data. Fields already parsed and discarded by `tracker.py` may be retained for the dashboard.
-
-Direct Featherweight values:
-
-- Altitude, latitude, longitude, and GPS fix.
-- Rocket heading.
-- Horizontal and vertical speed.
-- Packet CRC/integrity.
-- Packet type and tracker/vehicle ID.
-- Satellite count.
-- Satellite signal-band counts: 24, 32, and 40 dB.
-
-Calculated values:
-
-- Relative altitude: raw altitude minus configured ground-station altitude.
-- Total rocket speed: horizontal and vertical speed combined.
-- Mach: total speed divided by an assumed speed of sound.
-- Vertical acceleration: change in vertical speed divided by elapsed time.
-- G counter: vertical acceleration divided by standard gravity (`9.80665 m/s²`).
-- Flight time: time since the first accepted tracker packet.
-- Turret azimuth/yaw: calculated from rocket and ground-station positions.
-- Turret elevation/tilt: calculated from vertical and horizontal separation.
-- Target range: tracker horizontal distance, or an easily calculated 3D/slant distance.
-
-Important caveats:
-
-- The G counter uses vertical acceleration only. It is not true accelerometer-measured load force: **agarrarlo con pinzas**. Its real meaning is “vertical acceleration expressed in G.”
-- Decide whether “Target range” means horizontal ground distance or 3D/slant distance before live integration.
-- Current `KEYFRAMES` independently hardcode altitude, speeds, yaw, elevation, and range. They are not guaranteed to obey the tracker equations or agree with one another.
-- Simulation/source labels and browser data-link status are dashboard state, not rocket telemetry.
-- Radar mechanical sweep and limits come from `antenna_controller.ino`, not `tracker.py`.
-- The elevation gauge's 0–90° range is a UI choice, not a tracker-supplied limit.
-
-Live integration must publish one consistent telemetry object from `tracker.py`. Its parser currently returns only latitude, longitude, altitude, and fix. Heading, velocities, CRC, identity, and satellite fields are already matched but discarded.
 
 ## Tracker selection and packet integrity
 
@@ -86,10 +54,3 @@ Current firmware blockers:
 - Reported servo position is commanded position, not measured position; there is no encoder feedback.
 
 A non-blocking `millis()` control loop is likely better than threads: continuously parse input, store the newest targets, and step both servos independently.
-
-## Open questions
-
-- Which Arduino model is being used?
-- How does the Featherweight expose serial data, and at what voltage?
-- How frequently do GPS packets arrive?
-- How fast may the turret move safely?

@@ -46,19 +46,102 @@ python tracker.py --rx COM7 --arduino COM6
 Point the antenna at the rocket on the launch rail before starting. The first
 valid GPS packet establishes the zero-yaw direction.
 
-## Dashboard simulation
+## Linux C controller scaffold
 
-Install the requirements, then start the local dashboard:
+Build with `make -C controller` and run `make -C controller test` for the
+state and Unix socket integration tests. To start with two mock receivers:
 
-```shell
-python -m pip install -r requirements.txt
-python dashboard.py
+```sh
+mkdir -p run
+mkfifo run/rx1 run/rx2
+./controller/build/controller run/dashboard.sock run/rx1 run/rx2
 ```
 
-The dashboard opens automatically at `http://127.0.0.1:8000` and runs a short,
-repeating simulated flight based on the TeleMega workbook data. It shows live
-telemetry without opening serial ports or sending commands to the turret. Stop
-the server with `Ctrl+C`.
+Create the FIFOs once. Each command-line receiver gets a numeric ID starting
+at 1. Write Featherweight records into either FIFO. A new `@` finishes the
+preceding record, so append a final `@` when replaying a finite input file.
+
+One local dashboard client can connect to the socket. It receives a JSON
+snapshot on connection and on updates. Send one quoted command per line
+(`"START_MANUAL"`, `"START_AUTOMATIC"`, or `"ARM"`). Each reply includes
+`accepted` and the resulting state. Manual and automatic acquisition and landing detection remain stubs. The web dashboard reads controller snapshots.
+
+## Looping mock receiver
+
+With the dashboard Python dependencies installed, open two terminals in the
+project folder. In the first terminal, build the controller and start it in
+disarmed with a mock receiver:
+
+```sh
+make -C controller
+mkdir -p run
+mkfifo run/rx1
+python ground-station.py run/rx1
+```
+
+In the second terminal, activate the virtual environment and start the mock:
+
+```sh
+source .venv/bin/activate
+python mock_receiver.py run/rx1
+```
+
+Open the dashboard and select **Start tracking**. The mock sends the simulated
+flight as GPS packets and repeats it
+until stopped with Ctrl+C. The first packet establishes the zero direction.
+The controller prints commanded turret angles as it moves. Servo output is
+simulated unless the PWM environment variables below are configured. The web dashboard receives the controller's GPS data. Other dashboard values
+are zero until the controller supplies them.
+
+## Raspberry Pi Zero W tracking output
+
+Build on the Pi with `make -C controller`. Pass receiver device paths such as
+`/dev/serial/by-id/...` in the same positions as the mock FIFOs. The controller
+configures serial devices for 115200 baud, 8N1. In tracking mode it uses fresh
+`CRC_OK TRK` records with a 3D fix. If multiple inputs supply a fix on the
+same loop pass, the first receiver in command-line order takes priority.
+Use receivers monitoring the same rocket.
+
+Set the station coordinates in `controller/tracker.c` for your site.
+Elevation uses GPS altitude and station altitude in the same reference frame.
+Point the calibrated zero direction toward the rocket before tracking. The
+first valid tracking fix establishes the horizontal zero bearing. Tracking
+updates move each commanded axis by up to one degree every 40 ms.
+
+For hardware output, configure the Pi's boot settings with
+`dtoverlay=pwm-2chan,pin=12,func=4,pin2=13,func2=4` and disable competing
+PWM users such as onboard analog audio. Reboot and identify the corresponding
+`/sys/class/pwm/pwmchipN`. Export channels 0 and 1 through its `export`
+attribute and give the controller write access to both channels. Channel 0
+drives azimuth on BCM GPIO12 (header pin 32). Channel 1 drives elevation on
+BCM GPIO13 (header pin 33). Confirm these pins are available on your hub HAT.
+Use a servo supply rated for both motors and connect its ground to Pi ground.
+
+Set these environment variables before starting the controller:
+
+| Variable | Value |
+| --- | --- |
+| `TURRET_PWM_CHIP` | Path to the chip with exported `pwm0` and `pwm1` |
+| `TURRET_AZ_PULSE_US` | Azimuth pulse widths at 0° and 270°, as `min:max` in microseconds |
+| `TURRET_EL_PULSE_US` | Elevation pulse widths in the same format |
+
+The driver assumes positional servos with 270° calibrated travel and a 20 ms
+period. Verify the pulse range, travel, period, and 3.3 V signal compatibility
+for the actual servos. With `TURRET_PWM_CHIP` unset, the controller runs
+with simulated servo output. During tracking, the driver prints PWM write errors to standard error and continues. Shutdown disables channels enabled by the controller.
+
+## Ground station dashboard
+
+Start the controller and web server:
+
+```shell
+python ground-station.py
+```
+
+Open `http://<pi-ip-address>:8000` on a device in the same network. Pass
+receiver paths as arguments. Add `--tracking` to start directly in tracking
+mode. The looping mock receiver instructions above provide simulated GPS.
+Stop the ground station with `Ctrl+C`.
 
 ## Arduino
 
