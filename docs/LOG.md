@@ -1,4 +1,16 @@
-## l0l0 logs 11/20/2026 Mk3 on the way
+## l0l0 logs 11/20/2026 (18:07) Mk3 on the way
+
+| Servo     | Pi GPIO | Physical header pin |
+|  ---      |  ---:   |    ---:             |
+| Azimuth   | GPIO12  | Pin 32              |
+| Elevation | GPIO13  | Pin 33              |
+
+Estos son losmpines de GPIO para los servos
+
+la lat y long de la gs esta de momento hardcodeada 
+hay un todo list en lolo-notes.md
+
+## l0l0 logs 11/20/2026 (11:00) Mk3 on the way
 
 Loego de deliberar y cheralar con el grupo decidimos que lo mejor
 seria hacero lo con una raspi zero w con usb hat, que podria funcionar 
