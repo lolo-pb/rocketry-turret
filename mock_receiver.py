@@ -139,7 +139,7 @@ def main():
                 )
                 sequence += 1
                 time.sleep(1 / UPDATE_HZ)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, BrokenPipeError):
         pass
 
 

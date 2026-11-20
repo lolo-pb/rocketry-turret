@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import contextlib
 import json
+import math
 import subprocess
 import tempfile
 import threading
@@ -28,6 +29,13 @@ controller_connected = False
 def dashboard_telemetry(snapshot, sequence):
     rocket = snapshot["rocket"]
     station = snapshot["ground_station"]
+    turret = snapshot["turret"]
+    east = north = up = 0
+    if rocket["fix"] >= 2:
+        earth_radius_m = 6378137.0
+        east = math.radians(rocket["longitude"] - station["longitude"]) * earth_radius_m * math.cos(math.radians(station["latitude"]))
+        north = math.radians(rocket["latitude"] - station["latitude"]) * earth_radius_m
+        up = rocket["altitude_m"] - station["altitude_m"]
     return {
         "source": "controller",
         "sequence": sequence,
@@ -36,21 +44,21 @@ def dashboard_telemetry(snapshot, sequence):
         "elapsed_s": 0,
         "packet_type": "0",
         "tracker_id": "0",
-        "altitude_m": 0,
+        "altitude_m": up,
         "horizontal_speed_m_s": 0,
         "heading_deg": 0,
         "vertical_speed_m_s": 0,
         "speed_m_s": 0,
         "acceleration_m_s2": 0,
-        "yaw_deg": 0,
-        "tilt_deg": 0,
-        "distance_m": 0,
+        "yaw_deg": turret["azimuth_deg"],
+        "tilt_deg": turret["elevation_deg"],
+        "distance_m": math.hypot(east, north),
         "rocket_latitude_deg": rocket["latitude"],
         "rocket_longitude_deg": rocket["longitude"],
         "rocket_altitude_asl_m": rocket["altitude_m"],
-        "rocket_east_m": 0,
-        "rocket_north_m": 0,
-        "rocket_up_m": 0,
+        "rocket_east_m": east,
+        "rocket_north_m": north,
+        "rocket_up_m": up,
         "ground_station_latitude_deg": station["latitude"],
         "ground_station_longitude_deg": station["longitude"],
         "ground_station_altitude_asl_m": station["altitude_m"],
@@ -142,7 +150,9 @@ def main():
         command.append(controller_socket)
         command.extend(args.receivers)
         controller = subprocess.Popen(command)
-        server = uvicorn.Server(uvicorn.Config(app, host=HOST, port=PORT))
+        server = uvicorn.Server(
+            uvicorn.Config(app, host=HOST, port=PORT, timeout_graceful_shutdown=2)
+        )
 
         def monitor_controller():
             code = controller.wait()

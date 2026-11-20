@@ -75,10 +75,12 @@ void dashboard_publish(struct Dashboard *dashboard, const struct Controller *con
     }
     fprintf(out, "],\"rocket\":{\"latitude\":%.10g,\"longitude\":%.10g,\"altitude_m\":%.10g,\"fix\":%d},"
             "\"ground_station\":{\"latitude\":%.10g,\"longitude\":%.10g,\"altitude_m\":%.10g},"
+            "\"turret\":{\"azimuth_deg\":%d,\"elevation_deg\":%d},"
             "\"landing_estimate\":null}\n",
             rocket_state.telemetry.latitude, rocket_state.telemetry.longitude,
             rocket_state.telemetry.altitude_m, rocket_state.telemetry.fix,
-            gs_state.latitude, gs_state.longitude, gs_state.altitude_m);
+            gs_state.latitude, gs_state.longitude, gs_state.altitude_m,
+            controller->turret.azimuth_deg, controller->turret.elevation_deg);
     if (fclose(out) == 0)
         send_line(dashboard, json);
     else
