@@ -64,8 +64,33 @@ preceding record, so append a final `@` when replaying a finite input file.
 One local dashboard client can connect to the socket. It receives a JSON
 snapshot on connection and on updates. Send one quoted command per line
 (`"START_MANUAL"`, `"START_AUTOMATIC"`, or `"ARM"`). Each reply includes
-`accepted` and the resulting state. Manual and automatic acquisition and landing detection remain stubs. The Python web dashboard currently
-runs its own simulation.
+`accepted` and the resulting state. Manual and automatic acquisition and landing detection remain stubs. The web dashboard reads controller snapshots.
+
+## Looping mock receiver
+
+With the dashboard Python dependencies installed, open two terminals in the
+project folder. In the first terminal, build the controller and start it in
+tracking mode with a mock receiver:
+
+```sh
+make -C controller
+mkdir -p run
+mkfifo run/rx1
+python ground-station.py --tracking run/rx1
+```
+
+In the second terminal, activate the virtual environment and start the mock:
+
+```sh
+source .venv/bin/activate
+python mock_receiver.py run/rx1
+```
+
+The mock sends the simulated flight as GPS packets and repeats it
+until stopped with Ctrl+C. The first packet establishes the zero direction.
+The controller prints commanded turret angles as it moves. Servo output is
+simulated unless the PWM environment variables below are configured. The web dashboard receives the controller's GPS data. Other dashboard values
+are zero until the controller supplies them.
 
 ## Raspberry Pi Zero W tracking output
 
@@ -104,20 +129,18 @@ period. Verify the pulse range, travel, period, and 3.3 V signal compatibility
 for the actual servos. With `TURRET_PWM_CHIP` unset, the controller runs
 with simulated servo output. During tracking, the driver prints PWM write errors to standard error and continues. Shutdown disables channels enabled by the controller.
 
-## Dashboard simulation
+## Ground station dashboard
 
-Install the requirements, then start the local dashboard:
+Start the controller and web server:
 
 ```shell
-python -m pip install -r requirements.txt
-python dashboard.py
+python ground-station.py
 ```
 
-Open `http://<pi-ip-address>:8000` on a device in the same network.
-The dashboard runs a short,
-repeating simulated flight based on the TeleMega workbook data. It shows live
-telemetry without opening serial ports or sending commands to the turret. Stop
-the server with `Ctrl+C`.
+Open `http://<pi-ip-address>:8000` on a device in the same network. Pass
+receiver paths as arguments. Add `--tracking` to start directly in tracking
+mode. The looping mock receiver instructions above provide simulated GPS.
+Stop the ground station with `Ctrl+C`.
 
 ## Arduino
 

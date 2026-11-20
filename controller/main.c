@@ -5,6 +5,7 @@
 #include <poll.h>
 #include <signal.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -39,28 +40,30 @@ int main(int argc, char **argv) {
   signal(SIGTERM, stop);
   umask(0077);
 
-  if (argc < 2 || argc > MAX_RECEIVERS + 2) {
-    fprintf(stderr, "usage: %s SOCKET [MOCK_RECEIVER ...] (maximum %d)\n",
+  bool start_tracking = argc > 1 && strcmp(argv[1], "--tracking") == 0;
+  int dashboard_socket_arg = start_tracking ? 2 : 1;
+  if (argc < dashboard_socket_arg + 1 || argc > dashboard_socket_arg + MAX_RECEIVERS + 1) {
+    fprintf(stderr, "usage: %s [--tracking] SOCKET [RECEIVER ...] (maximum %d)\n",
             argv[0], MAX_RECEIVERS);
     return 2;
   }
 
 
   struct Receiver receivers[MAX_RECEIVERS] = {0};
-  struct Controller controller = {.state = DISARMED, .receivers = receivers, .recieverCount = argc - 2};
+  struct Controller controller = {.state = start_tracking ? TRACKING : DISARMED, .receivers = receivers, .recieverCount = argc - dashboard_socket_arg - 1};
   for (size_t i = 0; i < controller.recieverCount; i++) {
     receivers[i].id = i + 1;
     receivers[i].latest.fix = -1;
-    receivers[i].fd = receiver_open(argv[i + 2]);
+    receivers[i].fd = receiver_open(argv[dashboard_socket_arg + 1 + i]);
     if (receivers[i].fd < 0) {
-      perror(argv[i + 2]);
+      perror(argv[dashboard_socket_arg + 1 + i]);
       return 1;
     }
   }
 
   struct Dashboard dashboard = {0};
-  if (dashboard_open(&dashboard, argv[1]) < 0) {
-    perror(argv[1]);
+  if (dashboard_open(&dashboard, argv[dashboard_socket_arg]) < 0) {
+    perror(argv[dashboard_socket_arg]);
     return 1;
   }
 
@@ -70,7 +73,7 @@ int main(int argc, char **argv) {
   struct ServoOutput servos;
   if (servos_open(&servos) < 0) {
     perror("open servo PWM channels");
-    unlink(argv[1]);
+    unlink(argv[dashboard_socket_arg]);
     return 1;
   }
 
@@ -115,6 +118,6 @@ int main(int argc, char **argv) {
   }
 
   servos_close(&servos);
-  unlink(argv[1]);
+  unlink(argv[dashboard_socket_arg]);
   return result;
 }

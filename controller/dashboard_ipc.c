@@ -73,7 +73,12 @@ void dashboard_publish(struct Dashboard *dashboard, const struct Controller *con
         }
         fputc('}', out);
     }
-    fputs("],\"landing_estimate\":null}\n", out);
+    fprintf(out, "],\"rocket\":{\"latitude\":%.10g,\"longitude\":%.10g,\"altitude_m\":%.10g,\"fix\":%d},"
+            "\"ground_station\":{\"latitude\":%.10g,\"longitude\":%.10g,\"altitude_m\":%.10g},"
+            "\"landing_estimate\":null}\n",
+            rocket_state.telemetry.latitude, rocket_state.telemetry.longitude,
+            rocket_state.telemetry.altitude_m, rocket_state.telemetry.fix,
+            gs_state.latitude, gs_state.longitude, gs_state.altitude_m);
     if (fclose(out) == 0)
         send_line(dashboard, json);
     else

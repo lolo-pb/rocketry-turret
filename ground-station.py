@@ -1,8 +1,9 @@
-"""Local dashboard server with a deterministic simulated rocket flight."""
+"""Ground-station web server and controller launcher."""
 
 import argparse
 import asyncio
 import contextlib
+import json
 import subprocess
 import tempfile
 import threading
@@ -10,7 +11,6 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 import uvicorn
-import mock_receiver
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -18,33 +18,76 @@ from fastapi.staticfiles import StaticFiles
 
 HOST = "0.0.0.0"
 PORT = 8000
-UPDATE_HZ = mock_receiver.UPDATE_HZ
-PLAYBACK_SPEED = mock_receiver.PLAYBACK_SPEED
-PRELAUNCH_HOLD_S = mock_receiver.PRELAUNCH_HOLD_S
-EARTH_RADIUS_M = mock_receiver.EARTH_RADIUS_M
-GROUND_STATION_LATITUDE_DEG = mock_receiver.GROUND_STATION_LATITUDE_DEG
-GROUND_STATION_LONGITUDE_DEG = mock_receiver.GROUND_STATION_LONGITUDE_DEG
-GROUND_STATION_ALTITUDE_ASL_M = mock_receiver.GROUND_STATION_ALTITUDE_ASL_M
-simulation_time_at = mock_receiver.simulation_time_at
-telemetry_at = mock_receiver.telemetry_at
+UPDATE_HZ = 10
 WEB_DIR = Path(__file__).parent / "web"
 latest_telemetry = {}
+controller_socket = None
+controller_connected = False
 
 
-async def run_simulation():
-    global latest_telemetry
+def dashboard_telemetry(snapshot, sequence):
+    rocket = snapshot["rocket"]
+    station = snapshot["ground_station"]
+    return {
+        "source": "controller",
+        "sequence": sequence,
+        "state": snapshot["state"],
+        "receivers": snapshot["receivers"],
+        "elapsed_s": 0,
+        "packet_type": "0",
+        "tracker_id": "0",
+        "altitude_m": 0,
+        "horizontal_speed_m_s": 0,
+        "heading_deg": 0,
+        "vertical_speed_m_s": 0,
+        "speed_m_s": 0,
+        "acceleration_m_s2": 0,
+        "yaw_deg": 0,
+        "tilt_deg": 0,
+        "distance_m": 0,
+        "rocket_latitude_deg": rocket["latitude"],
+        "rocket_longitude_deg": rocket["longitude"],
+        "rocket_altitude_asl_m": rocket["altitude_m"],
+        "rocket_east_m": 0,
+        "rocket_north_m": 0,
+        "rocket_up_m": 0,
+        "ground_station_latitude_deg": station["latitude"],
+        "ground_station_longitude_deg": station["longitude"],
+        "ground_station_altitude_asl_m": station["altitude_m"],
+        "gps_fix": rocket["fix"],
+        "satellites": 0,
+        "satellites_24db": 0,
+        "satellites_32db": 0,
+        "satellites_40db": 0,
+        "crc_ok": False,
+    }
+
+
+async def read_controller():
+    global latest_telemetry, controller_connected
     sequence = 0
-
     while True:
-        sim_time = simulation_time_at(sequence)
-        latest_telemetry = telemetry_at(sim_time, sequence)
-        sequence += 1
-        await asyncio.sleep(1 / UPDATE_HZ)
+        try:
+            reader, writer = await asyncio.open_unix_connection(controller_socket)
+            controller_connected = True
+            try:
+                while line := await reader.readline():
+                    snapshot = json.loads(line)
+                    if snapshot.get("type") == "snapshot":
+                        latest_telemetry = dashboard_telemetry(snapshot, sequence)
+                        sequence += 1
+            finally:
+                controller_connected = False
+                writer.close()
+                await writer.wait_closed()
+        except (OSError, ValueError):
+            controller_connected = False
+        await asyncio.sleep(1)
 
 
 @asynccontextmanager
 async def lifespan(_app):
-    task = asyncio.create_task(run_simulation())
+    task = asyncio.create_task(read_controller())
     try:
         yield
     finally:
@@ -64,7 +107,7 @@ async def index():
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "source": "simulation"}
+    return {"status": "ok", "source": "controller", "controller_connected": controller_connected}
 
 
 @app.websocket("/ws/telemetry")
@@ -90,11 +133,13 @@ def main():
 
     root = Path(__file__).resolve().parent
     subprocess.run(["make", "-C", str(root / "controller")], check=True)
+    global controller_socket
     with tempfile.TemporaryDirectory(prefix="ground-station-") as directory:
+        controller_socket = str(Path(directory) / "controller.sock")
         command = [str(root / "controller" / "build" / "controller")]
         if args.tracking:
             command.append("--tracking")
-        command.append(str(Path(directory) / "controller.sock"))
+        command.append(controller_socket)
         command.extend(args.receivers)
         controller = subprocess.Popen(command)
         server = uvicorn.Server(uvicorn.Config(app, host=HOST, port=PORT))
