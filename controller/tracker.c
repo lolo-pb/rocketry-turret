@@ -54,17 +54,16 @@ static void update_target(struct Turret *turret, const struct Telemetry *sample)
 }
 
 Event tracker_update(struct Controller *controller, struct ServoOutput *servos) {
+  struct Turret *turret = &controller->turret;
   struct timespec now;
   if (clock_gettime(CLOCK_MONOTONIC, &now) < 0) return NO_EVENT;
   int64_t now_ms = (int64_t)now.tv_sec * 1000 + now.tv_nsec / 1000000;
+  turret->next_step_ms = now_ms + STEP_INTERVAL_MS;
   
-  struct Turret *turret = &controller->turret;
 
   if (now_ms < turret->next_step_ms) return NO_EVENT;
 
   if (rocket_state.tracker_fix) update_target(turret, &rocket_state);
-
-  turret->next_step_ms = now_ms + STEP_INTERVAL_MS;
   
   int azimuth = step_toward(turret->azimuth_deg, turret->target_azimuth_deg);
   int elevation = step_toward(turret->elevation_deg, turret->target_elevation_deg);
