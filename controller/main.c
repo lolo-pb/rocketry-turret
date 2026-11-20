@@ -19,8 +19,12 @@ struct GroundStationState gs_state = {
     .latitude = 31.95610,
     .longitude = -102.40344,
     .altitude_m = 915.0,
-    .servo_min_deg = 0,
-    .servo_max_deg = 270,
+    .azimuth_min_deg = -90,
+    .azimuth_max_deg = 90,
+    .elevation_min_deg = 0,
+    .elevation_max_deg = 90,
+    .azimuth_zero_deg = 0,
+    .elevation_zero_deg = 0,
 };
 
 static volatile sig_atomic_t stopping;

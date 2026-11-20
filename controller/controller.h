@@ -7,8 +7,6 @@
 
 #define STEP_INTERVAL_MS 40
 #define STEP_DEG 1
-#define AZIMUTH_ZERO_DEG 110
-#define ELEVATION_ZERO_DEG 105
 #define AZIMUTH_DIRECTION 1
 #define ELEVATION_DIRECTION 1
 
@@ -43,7 +41,9 @@ struct RocketState {
 
 struct GroundStationState {
     double latitude, longitude, altitude_m;
-    int servo_min_deg, servo_max_deg;
+    int elevation_min_deg, elevation_max_deg;
+    int azimuth_min_deg, azimuth_max_deg;
+    int azimuth_zero_deg, elevation_zero_deg;
 };
 
 extern struct RocketState rocket_state;

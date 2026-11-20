@@ -2,7 +2,7 @@
 #define SERVOS_H
 
 struct Servo {
-    int dir, min_us, max_us, last_angle;
+    int dir, min_us, max_us;
     int started;
 };
 

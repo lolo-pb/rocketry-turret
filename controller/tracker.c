@@ -5,9 +5,9 @@
 #include <stdio.h>
 #include <time.h>
 
-static int reachable_angle(double angle, int zero, int direction) {
-  int start = (gs_state.servo_min_deg - zero) * direction;
-  int end = (gs_state.servo_max_deg - zero) * direction;
+static int reachable_angle(double angle, int min, int max, int zero, int direction) {
+  int start = (min - zero) * direction;
+  int end = (max - zero) * direction;
   return (int)lround(fmin(fmax(angle, fmin(start, end)), fmax(start, end)));
 }
 
@@ -47,10 +47,10 @@ static void update_target(struct Turret *turret, const struct Telemetry *sample)
   turret->last_up_m = up;
   if (horizontal >= 1e-6) {
     double yaw = remainder((bearing - turret->zero_bearing_rad) / radians, 360.0);
-    turret->target_azimuth_deg = reachable_angle(yaw, AZIMUTH_ZERO_DEG, AZIMUTH_DIRECTION);
+    turret->target_azimuth_deg = reachable_angle(yaw, gs_state.azimuth_min_deg, gs_state.azimuth_max_deg, gs_state.azimuth_zero_deg, AZIMUTH_DIRECTION);
   }
   double tilt = atan2(up, horizontal) / radians;
-  turret->target_elevation_deg = reachable_angle(tilt, ELEVATION_ZERO_DEG, ELEVATION_DIRECTION);
+  turret->target_elevation_deg = reachable_angle(tilt, gs_state.elevation_min_deg, gs_state.elevation_max_deg, gs_state.elevation_zero_deg, ELEVATION_DIRECTION);
 }
 
 Event tracker_update(struct Controller *controller, struct ServoOutput *servos) {

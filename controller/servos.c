@@ -9,6 +9,8 @@
 
 #define PERIOD_NS 20000000
 
+enum Axis { AZIMUTH, ELEVATION };
+
 static int attribute(int dir, const char *name, int value)
 {
     char text[32];
@@ -33,15 +35,15 @@ static int open_axis(struct Servo *servo, int chip, const char *channel, const c
     char extra;
     if (!range || sscanf(range, "%d:%d%c", &servo->min_us, &servo->max_us, &extra) != 2 ||
         servo->min_us <= 0 || servo->max_us <= servo->min_us || servo->max_us >= PERIOD_NS / 1000) {
-        fprintf(stderr, "%s requires min_us:max_us for the servo's %d..%d degree range\n",
-                setting, gs_state.servo_min_deg, gs_state.servo_max_deg);
+        fprintf(stderr, "%s requires min_us:max_us for the servo range\n", setting);
         errno = EINVAL;
         return -1;
     }
     servo->dir = openat(chip, channel, O_RDONLY | O_DIRECTORY);
-    servo->last_angle = -1;
     return servo->dir < 0 ? -1 : 0;
 }
+
+static int write_angle(struct Servo *servo, int angle, enum Axis axis);
 
 int servos_open(struct ServoOutput *output)
 {
@@ -55,6 +57,10 @@ int servos_open(struct ServoOutput *output)
     int result = open_axis(&output->azimuth, chip, "pwm0", "TURRET_AZ_PULSE_US");
     if (result == 0)
         result = open_axis(&output->elevation, chip, "pwm1", "TURRET_EL_PULSE_US");
+    if (result == 0)
+        result = write_angle(&output->azimuth, gs_state.azimuth_zero_deg, AZIMUTH);
+    if (result == 0)
+        result = write_angle(&output->elevation, gs_state.elevation_zero_deg, ELEVATION);
     int error = errno;
     close(chip);
     if (result < 0) {
@@ -64,31 +70,32 @@ int servos_open(struct ServoOutput *output)
     return result;
 }
 
-static int write_angle(struct Servo *servo, int angle)
+static int write_angle(struct Servo *servo, int angle, enum Axis axis)
 {
-    if (servo->dir < 0 || angle == servo->last_angle)
+    if (servo->dir < 0)
         return 0;
     if (!servo->started) {
         if (attribute(servo->dir, "enable", 0) || attribute(servo->dir, "duty_cycle", 0) ||
             attribute(servo->dir, "period", PERIOD_NS))
             return -1;
     }
+    int min = axis == AZIMUTH ? gs_state.azimuth_min_deg : gs_state.elevation_min_deg;
+    int max = axis == AZIMUTH ? gs_state.azimuth_max_deg : gs_state.elevation_max_deg;
     int duty_ns = servo->min_us * 1000 +
         (int)((long long)(servo->max_us - servo->min_us) * 1000 *
-              (angle - gs_state.servo_min_deg) / (gs_state.servo_max_deg - gs_state.servo_min_deg));
+              (angle - min) / (max - min));
     if (attribute(servo->dir, "duty_cycle", duty_ns) ||
         (!servo->started && attribute(servo->dir, "enable", 1)))
         return -1;
     servo->started = 1;
-    servo->last_angle = angle;
     return 0;
 }
 
 void servos_write(struct ServoOutput *output, int azimuth, int elevation)
 {
-    if (write_angle(&output->azimuth, AZIMUTH_ZERO_DEG + AZIMUTH_DIRECTION * azimuth) < 0)
+    if (write_angle(&output->azimuth, gs_state.azimuth_zero_deg + AZIMUTH_DIRECTION * azimuth, AZIMUTH) < 0)
         perror("write azimuth PWM");
-    if (write_angle(&output->elevation, ELEVATION_ZERO_DEG + ELEVATION_DIRECTION * elevation) < 0)
+    if (write_angle(&output->elevation, gs_state.elevation_zero_deg + ELEVATION_DIRECTION * elevation, ELEVATION) < 0)
         perror("write elevation PWM");
 }
 
