@@ -46,6 +46,28 @@ python tracker.py --rx COM7 --arduino COM6
 Point the antenna at the rocket on the launch rail before starting. The first
 valid GPS packet establishes the zero-yaw direction.
 
+## Linux C controller scaffold
+
+Build with `make -C controller` and run `make -C controller test` for the
+state and Unix socket integration tests. To start with two mock receivers:
+
+```sh
+mkdir -p run
+mkfifo run/rx1 run/rx2
+./controller/build/controller run/dashboard.sock run/rx1 run/rx2
+```
+
+Create the FIFOs once. Each command-line receiver gets a numeric ID starting
+at 1. Write Featherweight records into either FIFO. A new `@` finishes the
+preceding record, so append a final `@` when replaying a finite input file.
+
+One local dashboard client can connect to the socket. It receives a JSON
+snapshot on connection and on updates. Send one quoted command per line
+(`"START_MANUAL"`, `"START_AUTOMATIC"`, or `"ARM"`). Each reply includes
+`accepted` and the resulting state. Acquisition, tracking, and landing are
+scaffolded for future implementation. The Python web dashboard currently
+runs its own simulation.
+
 ## Dashboard simulation
 
 Install the requirements, then start the local dashboard:
