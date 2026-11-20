@@ -3,11 +3,6 @@
 import asyncio
 import contextlib
 import math
-import threading
-import time
-import urllib.error
-import urllib.request
-import webbrowser
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -17,7 +12,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 
-HOST = "127.0.0.1"
+HOST = "0.0.0.0"
 PORT = 8000
 UPDATE_HZ = 10
 PLAYBACK_SPEED = 1.0
@@ -187,18 +182,5 @@ async def telemetry_socket(websocket: WebSocket):
         pass
 
 
-def open_browser_when_ready():
-    health_url = f"http://{HOST}:{PORT}/health"
-    deadline = time.monotonic() + 10
-    while time.monotonic() < deadline:
-        try:
-            with urllib.request.urlopen(health_url, timeout=0.25):
-                webbrowser.open(f"http://{HOST}:{PORT}")
-                return
-        except (urllib.error.URLError, OSError):
-            time.sleep(0.1)
-
-
 if __name__ == "__main__":
-    threading.Thread(target=open_browser_when_ready, daemon=True).start()
     uvicorn.run(app, host=HOST, port=PORT)

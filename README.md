@@ -113,7 +113,8 @@ python -m pip install -r requirements.txt
 python dashboard.py
 ```
 
-The dashboard opens automatically at `http://127.0.0.1:8000` and runs a short,
+Open `http://<pi-ip-address>:8000` on a device in the same network.
+The dashboard runs a short,
 repeating simulated flight based on the TeleMega workbook data. It shows live
 telemetry without opening serial ports or sending commands to the turret. Stop
 the server with `Ctrl+C`.
