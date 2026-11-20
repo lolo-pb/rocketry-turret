@@ -14,11 +14,13 @@
 #define DASHBOARD_CLIENT_SLOT 1
 #define FIRST_RECEIVER_SLOT 2
 
-struct Telemetry rocket_state;
-struct Telemetry gs_state = {
+struct RocketState rocket_state;
+struct GroundStationState gs_state = {
     .latitude = 31.95610,
     .longitude = -102.40344,
     .altitude_m = 915.0,
+    .servo_min_deg = 0,
+    .servo_max_deg = 270,
 };
 
 static volatile sig_atomic_t stopping;

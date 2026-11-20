@@ -4,7 +4,7 @@
 
 - [ ] `controller/manual.c` — manual acquisition
 - [ ] `controller/automatic.c` — automatic acquisition
-- [ ] `controller/tracker.c` — locked tracking
+- [/] `controller/tracker.c` — locked tracking
 
 - [ ] REview reciever logic. maybe a khalman filter
 

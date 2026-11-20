@@ -7,7 +7,6 @@
 
 #define STEP_INTERVAL_MS 40
 #define STEP_DEG 1
-#define SERVO_TRAVEL_DEG 270
 #define AZIMUTH_ZERO_DEG 110
 #define ELEVATION_ZERO_DEG 105
 #define AZIMUTH_DIRECTION 1
@@ -38,8 +37,17 @@ struct Telemetry {
     bool tracker_fix;
 };
 
-extern struct Telemetry rocket_state;
-extern struct Telemetry gs_state;
+struct RocketState {
+    struct Telemetry telemetry;
+};
+
+struct GroundStationState {
+    double latitude, longitude, altitude_m;
+    int servo_min_deg, servo_max_deg;
+};
+
+extern struct RocketState rocket_state;
+extern struct GroundStationState gs_state;
 
 struct Receiver {
     int fd;

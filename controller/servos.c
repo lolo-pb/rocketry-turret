@@ -33,7 +33,8 @@ static int open_axis(struct Servo *servo, int chip, const char *channel, const c
     char extra;
     if (!range || sscanf(range, "%d:%d%c", &servo->min_us, &servo->max_us, &extra) != 2 ||
         servo->min_us <= 0 || servo->max_us <= servo->min_us || servo->max_us >= PERIOD_NS / 1000) {
-        fprintf(stderr, "%s requires min_us:max_us for the servo's 0..%d degree range\n", setting, SERVO_TRAVEL_DEG);
+        fprintf(stderr, "%s requires min_us:max_us for the servo's %d..%d degree range\n",
+                setting, gs_state.servo_min_deg, gs_state.servo_max_deg);
         errno = EINVAL;
         return -1;
     }
@@ -73,7 +74,8 @@ static int write_angle(struct Servo *servo, int angle)
             return -1;
     }
     int duty_ns = servo->min_us * 1000 +
-        (int)((long long)(servo->max_us - servo->min_us) * 1000 * angle / SERVO_TRAVEL_DEG);
+        (int)((long long)(servo->max_us - servo->min_us) * 1000 *
+              (angle - gs_state.servo_min_deg) / (gs_state.servo_max_deg - gs_state.servo_min_deg));
     if (attribute(servo->dir, "duty_cycle", duty_ns) ||
         (!servo->started && attribute(servo->dir, "enable", 1)))
         return -1;

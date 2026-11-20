@@ -6,8 +6,8 @@
 #include <time.h>
 
 static int reachable_angle(double angle, int zero, int direction) {
-  int start = -zero * direction;
-  int end = (SERVO_TRAVEL_DEG - zero) * direction;
+  int start = (gs_state.servo_min_deg - zero) * direction;
+  int end = (gs_state.servo_max_deg - zero) * direction;
   return (int)lround(fmin(fmax(angle, fmin(start, end)), fmax(start, end)));
 }
 
@@ -63,7 +63,7 @@ Event tracker_update(struct Controller *controller, struct ServoOutput *servos) 
 
   if (now_ms < turret->next_step_ms) return NO_EVENT;
 
-  if (rocket_state.tracker_fix) update_target(turret, &rocket_state);
+  if (rocket_state.telemetry.tracker_fix) update_target(turret, &rocket_state.telemetry);
   
   int azimuth = step_toward(turret->azimuth_deg, turret->target_azimuth_deg);
   int elevation = step_toward(turret->elevation_deg, turret->target_elevation_deg);

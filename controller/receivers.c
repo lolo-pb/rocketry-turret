@@ -77,7 +77,7 @@ void receivers_read(struct Controller *controller, const struct pollfd *inputs)
 {
     bool selected = false;
     for (size_t i = 0; i < controller->recieverCount; i++) {
-        if (inputs[i].revents && receiver_read(&controller->receivers[i], selected ? NULL : &rocket_state))
+        if (inputs[i].revents && receiver_read(&controller->receivers[i], selected ? NULL : &rocket_state.telemetry))
             selected = true;
     }
 }
