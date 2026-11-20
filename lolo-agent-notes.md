@@ -1,5 +1,22 @@
 # Rocketry Turret — Lolo Agent Notes
 
+## TODO
+
+- [ ] `controller/manual.c` — manual acquisition
+- [ ] `controller/automatic.c` — automatic acquisition
+- [ ] `controller/tracker.c` — locked tracking
+
+- [ ] Read live USB receivers on the Pi.
+- [ ] Validate packet integrity and tracker ID.
+
+- [ ] Connect the dashboard to the controller socket.
+- [ ] Serve the dashboard headlessly on the private network.
+
+- [ ] Add Commanding and Viewing roles for multiple laptops.
+- [ ] Show setup, arm, and tracking states on the dashboard.
+
+- [ ] Define landing detection and show the estimated landing position.
+
 ## Things to keep in mind
 
 How the controller connects to the usb recievers,
