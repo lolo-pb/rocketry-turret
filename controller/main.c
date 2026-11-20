@@ -1,4 +1,5 @@
 #include "controller.h"
+#include "servos.h"
 
 #include <errno.h>
 #include <poll.h>
@@ -12,6 +13,13 @@
 #define DASHBOARD_LISTENER_SLOT 0
 #define DASHBOARD_CLIENT_SLOT 1
 #define FIRST_RECEIVER_SLOT 2
+
+struct Telemetry rocket_state;
+struct Telemetry gs_state = {
+    .latitude = 31.95610,
+    .longitude = -102.40344,
+    .altitude_m = 915.0,
+};
 
 static volatile sig_atomic_t stopping;
 
@@ -33,9 +41,10 @@ int main(int argc, char **argv) {
 
 
   struct Receiver receivers[MAX_RECEIVERS] = {0};
-  struct Controller controller = {.state = DISARMED, .receivers = receivers, .count = argc - 2};
-  for (size_t i = 0; i < controller.count; i++) {
+  struct Controller controller = {.state = DISARMED, .receivers = receivers, .recieverCount = argc - 2};
+  for (size_t i = 0; i < controller.recieverCount; i++) {
     receivers[i].id = i + 1;
+    receivers[i].latest.fix = -1;
     receivers[i].fd = receiver_open(argv[i + 2]);
     if (receivers[i].fd < 0) {
       perror(argv[i + 2]);
@@ -52,16 +61,24 @@ int main(int argc, char **argv) {
   struct pollfd polling_pool[FIRST_RECEIVER_SLOT + MAX_RECEIVERS];
 
 
+  struct ServoOutput servos;
+  if (servos_open(&servos) < 0) {
+    perror("open servo PWM channels");
+    unlink(argv[1]);
+    return 1;
+  }
+
+
   int result = 0;
 
   while (!stopping) {
     polling_pool[DASHBOARD_LISTENER_SLOT] = (struct pollfd){.fd = dashboard.listener, .events = POLLIN};
     polling_pool[DASHBOARD_CLIENT_SLOT] = (struct pollfd){.fd = dashboard.client, .events = POLLIN};
-    for (size_t i = 0; i < controller.count; i++)
+    for (size_t i = 0; i < controller.recieverCount; i++)
       polling_pool[FIRST_RECEIVER_SLOT + i] = (struct pollfd){.fd = receivers[i].fd, .events = POLLIN};
 
 
-    if (poll(polling_pool, FIRST_RECEIVER_SLOT + controller.count, 10) < 0) {
+    if (poll(polling_pool, FIRST_RECEIVER_SLOT + controller.recieverCount, 10) < 0) {
       if (errno == EINTR)
         continue;
 
@@ -76,12 +93,7 @@ int main(int argc, char **argv) {
     if (polling_pool[DASHBOARD_LISTENER_SLOT].revents & POLLIN)
       dashboard_accept(&dashboard, &controller);
 
-    bool changed = false;
-
-    for (size_t i = 0; i < controller.count; i++)
-      if (polling_pool[FIRST_RECEIVER_SLOT + i].revents && receiver_read(&receivers[i]))
-        changed = true;
-
+    receivers_read(&controller, &polling_pool[FIRST_RECEIVER_SLOT]);
 
     Event event = NO_EVENT;
     if (controller.state == MANUAL_ACQUISITION)
@@ -89,13 +101,14 @@ int main(int argc, char **argv) {
     else if (controller.state == AUTOMATIC_ACQUISITION)
       event = automatic_update(&controller);
     else if (controller.state == TRACKING)
-      event = tracker_update(&controller);
+      event = tracker_update(&controller, &servos);
 
 
-    if (transition(&controller, event) || changed)
-      dashboard_publish(&dashboard, &controller);
+    transition(&controller, event);
+    dashboard_publish(&dashboard, &controller);
   }
 
+  servos_close(&servos);
   unlink(argv[1]);
   return result;
 }

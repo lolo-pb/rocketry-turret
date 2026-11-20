@@ -3,6 +3,15 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
+
+#define STEP_INTERVAL_MS 40
+#define STEP_DEG 1
+#define SERVO_TRAVEL_DEG 270
+#define AZIMUTH_ZERO_DEG 110
+#define ELEVATION_ZERO_DEG 105
+#define AZIMUTH_DIRECTION 1
+#define ELEVATION_DIRECTION 1
 
 typedef enum State {
     DISARMED,
@@ -26,30 +35,46 @@ typedef enum Event {
 struct Telemetry {
     double latitude, longitude, altitude_m;
     int fix;
+    bool tracker_fix;
 };
+
+extern struct Telemetry rocket_state;
+extern struct Telemetry gs_state;
 
 struct Receiver {
     int fd;
     unsigned id;
     char record[1024];
     size_t used;
-    bool has_sample;
     struct Telemetry latest;
 };
 
+struct Turret {
+    int azimuth_deg, elevation_deg;  // Commanded turret angles relative to calibrated zero
+    int target_azimuth_deg, target_elevation_deg;
+    int64_t next_step_ms;
+    unsigned ticks;
+    bool calibrated;
+    double zero_bearing_rad;
+    double last_east_m, last_north_m, last_up_m;
+};
+
 struct Controller {
+    struct Turret turret;
     State state;
     struct Receiver *receivers;
-    size_t count;
+    size_t recieverCount;
 };
 
 bool transition(struct Controller *controller, Event event);
 Event automatic_update(const struct Controller *controller);
 Event manual_update(const struct Controller *controller);
-Event tracker_update(const struct Controller *controller);
+struct ServoOutput;
+Event tracker_update(struct Controller *controller, struct ServoOutput *servos);
 bool parse_record(const char *record, struct Telemetry *sample);
 int receiver_open(const char *path);
-bool receiver_read(struct Receiver *receiver);
+struct pollfd;
+void receivers_read(struct Controller *controller, const struct pollfd *inputs);
 
 struct Dashboard {
     int listener, client;

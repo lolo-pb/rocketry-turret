@@ -61,10 +61,10 @@ void dashboard_publish(struct Dashboard *dashboard, const struct Controller *con
         return;
     }
     fprintf(out, "{\"type\":\"snapshot\",\"state\":\"%s\",\"receivers\":[", state_names[controller->state]);
-    for (size_t i = 0; i < controller->count; i++) {
+    for (size_t i = 0; i < controller->recieverCount; i++) {
         const struct Receiver *receiver = &controller->receivers[i];
         fprintf(out, "%s{\"id\":%u,\"telemetry\":", i ? "," : "", receiver->id);
-        if (receiver->has_sample) {
+        if (receiver->latest.fix >= 0) {
             const struct Telemetry *s = &receiver->latest;
             fprintf(out, "{\"latitude\":%.10g,\"longitude\":%.10g,\"altitude_m\":%.10g,\"fix\":%d}",
                     s->latitude, s->longitude, s->altitude_m, s->fix);

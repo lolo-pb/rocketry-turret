@@ -64,9 +64,45 @@ preceding record, so append a final `@` when replaying a finite input file.
 One local dashboard client can connect to the socket. It receives a JSON
 snapshot on connection and on updates. Send one quoted command per line
 (`"START_MANUAL"`, `"START_AUTOMATIC"`, or `"ARM"`). Each reply includes
-`accepted` and the resulting state. Acquisition, tracking, and landing are
-scaffolded for future implementation. The Python web dashboard currently
+`accepted` and the resulting state. Manual and automatic acquisition and landing detection remain stubs. The Python web dashboard currently
 runs its own simulation.
+
+## Raspberry Pi Zero W tracking output
+
+Build on the Pi with `make -C controller`. Pass receiver device paths such as
+`/dev/serial/by-id/...` in the same positions as the mock FIFOs. The controller
+configures serial devices for 115200 baud, 8N1. In tracking mode it uses fresh
+`CRC_OK TRK` records with a 3D fix. If multiple inputs supply a fix on the
+same loop pass, the first receiver in command-line order takes priority.
+Use receivers monitoring the same rocket.
+
+Set the station coordinates in `controller/tracker.c` for your site.
+Elevation uses GPS altitude and station altitude in the same reference frame.
+Point the calibrated zero direction toward the rocket before tracking. The
+first valid tracking fix establishes the horizontal zero bearing. Tracking
+updates move each commanded axis by up to one degree every 40 ms.
+
+For hardware output, configure the Pi's boot settings with
+`dtoverlay=pwm-2chan,pin=12,func=4,pin2=13,func2=4` and disable competing
+PWM users such as onboard analog audio. Reboot and identify the corresponding
+`/sys/class/pwm/pwmchipN`. Export channels 0 and 1 through its `export`
+attribute and give the controller write access to both channels. Channel 0
+drives azimuth on BCM GPIO12 (header pin 32). Channel 1 drives elevation on
+BCM GPIO13 (header pin 33). Confirm these pins are available on your hub HAT.
+Use a servo supply rated for both motors and connect its ground to Pi ground.
+
+Set these environment variables before starting the controller:
+
+| Variable | Value |
+| --- | --- |
+| `TURRET_PWM_CHIP` | Path to the chip with exported `pwm0` and `pwm1` |
+| `TURRET_AZ_PULSE_US` | Azimuth pulse widths at 0° and 270°, as `min:max` in microseconds |
+| `TURRET_EL_PULSE_US` | Elevation pulse widths in the same format |
+
+The driver assumes positional servos with 270° calibrated travel and a 20 ms
+period. Verify the pulse range, travel, period, and 3.3 V signal compatibility
+for the actual servos. With `TURRET_PWM_CHIP` unset, the controller runs
+with simulated servo output. During tracking, the driver prints PWM write errors to standard error and continues. Shutdown disables channels enabled by the controller.
 
 ## Dashboard simulation
 

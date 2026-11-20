@@ -6,6 +6,8 @@
 - [ ] `controller/automatic.c` — automatic acquisition
 - [ ] `controller/tracker.c` — locked tracking
 
+- [ ] REview reciever logic. maybe a khalman filter
+
 - [ ] Read live USB receivers on the Pi.
 - [ ] Validate packet integrity and tracker ID.
 

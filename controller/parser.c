@@ -23,6 +23,8 @@ bool parse_record(const char *record, struct Telemetry *sample)
     if (!isfinite(altitude_ft) || !isfinite(parsed.latitude) || !isfinite(parsed.longitude))
         return false;
     parsed.altitude_m = altitude_ft * 0.3048;
+    parsed.tracker_fix = !strcasecmp(crc, "CRC_OK") && !strcasecmp(unit, "TRK")
+        && parsed.fix == 3 && fabs(parsed.latitude) <= 90 && fabs(parsed.longitude) <= 180;
     *sample = parsed;
     return true;
 }
