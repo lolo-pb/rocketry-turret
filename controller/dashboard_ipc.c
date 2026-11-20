@@ -63,7 +63,8 @@ void dashboard_publish(struct Dashboard *dashboard, const struct Controller *con
     fprintf(out, "{\"type\":\"snapshot\",\"state\":\"%s\",\"receivers\":[", state_names[controller->state]);
     for (size_t i = 0; i < controller->recieverCount; i++) {
         const struct Receiver *receiver = &controller->receivers[i];
-        fprintf(out, "%s{\"id\":%u,\"telemetry\":", i ? "," : "", receiver->id);
+        fprintf(out, "%s{\"id\":%u,\"connected\":%s,\"telemetry\":", i ? "," : "", receiver->id,
+                receiver->fd >= 0 ? "true" : "false");
         if (receiver->latest.fix >= 0) {
             const struct Telemetry *s = &receiver->latest;
             fprintf(out, "{\"latitude\":%.10g,\"longitude\":%.10g,\"altitude_m\":%.10g,\"fix\":%d}",
@@ -115,6 +116,8 @@ static void command(struct Dashboard *dashboard, struct Controller *controller)
         event = START_AUTOMATIC;
     else if (!strcmp(line, "\"START_MANUAL\""))
         event = START_MANUAL;
+    else if (!strcmp(line, "\"START_TRACKING\""))
+        event = START_TRACKING;
     else if (!strcmp(line, "\"ARM\""))
         event = ARM;
 

@@ -12,7 +12,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 import uvicorn
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -24,6 +24,9 @@ WEB_DIR = Path(__file__).parent / "web"
 latest_telemetry = {}
 controller_socket = None
 controller_connected = False
+controller_writer = None
+pending_command = None
+command_lock = asyncio.Lock()
 
 
 def dashboard_telemetry(snapshot, sequence):
@@ -72,20 +75,26 @@ def dashboard_telemetry(snapshot, sequence):
 
 
 async def read_controller():
-    global latest_telemetry, controller_connected
+    global latest_telemetry, controller_connected, controller_writer, pending_command
     sequence = 0
     while True:
         try:
             reader, writer = await asyncio.open_unix_connection(controller_socket)
             controller_connected = True
+            controller_writer = writer
             try:
                 while line := await reader.readline():
                     snapshot = json.loads(line)
                     if snapshot.get("type") == "snapshot":
                         latest_telemetry = dashboard_telemetry(snapshot, sequence)
                         sequence += 1
+                    elif snapshot.get("type") == "reply" and pending_command and not pending_command.done():
+                        pending_command.set_result(snapshot)
             finally:
                 controller_connected = False
+                controller_writer = None
+                if pending_command and not pending_command.done():
+                    pending_command.set_exception(ConnectionError("Controller disconnected"))
                 writer.close()
                 await writer.wait_closed()
         except (OSError, ValueError):
@@ -118,16 +127,38 @@ async def health():
     return {"status": "ok", "source": "controller", "controller_connected": controller_connected}
 
 
+@app.post("/api/start-tracking")
+async def start_tracking():
+    global pending_command
+    async with command_lock:
+        if not controller_connected or controller_writer is None:
+            raise HTTPException(status_code=503, detail="Controller disconnected")
+        pending_command = asyncio.get_running_loop().create_future()
+        try:
+            controller_writer.write(b'"START_TRACKING"\n')
+            await controller_writer.drain()
+            reply = await asyncio.wait_for(pending_command, timeout=3)
+        except (OSError, ConnectionError, asyncio.TimeoutError):
+            raise HTTPException(status_code=503, detail="Controller did not respond")
+        finally:
+            pending_command = None
+        if not reply["accepted"]:
+            raise HTTPException(status_code=409, detail="Controller rejected the command")
+        return reply
+
+
 @app.websocket("/ws/telemetry")
 async def telemetry_socket(websocket: WebSocket):
     await websocket.accept()
     last_sequence = -1
+    last_connection = None
     try:
         while True:
             sample = latest_telemetry
-            if sample and sample["sequence"] != last_sequence:
-                await websocket.send_json(sample)
+            if sample and (sample["sequence"] != last_sequence or controller_connected != last_connection):
+                await websocket.send_json({**sample, "controller_connected": controller_connected})
                 last_sequence = sample["sequence"]
+                last_connection = controller_connected
             await asyncio.sleep(1 / UPDATE_HZ / 2)
     except WebSocketDisconnect:
         pass

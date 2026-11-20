@@ -70,13 +70,13 @@ snapshot on connection and on updates. Send one quoted command per line
 
 With the dashboard Python dependencies installed, open two terminals in the
 project folder. In the first terminal, build the controller and start it in
-tracking mode with a mock receiver:
+disarmed with a mock receiver:
 
 ```sh
 make -C controller
 mkdir -p run
 mkfifo run/rx1
-python ground-station.py --tracking run/rx1
+python ground-station.py run/rx1
 ```
 
 In the second terminal, activate the virtual environment and start the mock:
@@ -86,7 +86,8 @@ source .venv/bin/activate
 python mock_receiver.py run/rx1
 ```
 
-The mock sends the simulated flight as GPS packets and repeats it
+Open the dashboard and select **Start tracking**. The mock sends the simulated
+flight as GPS packets and repeats it
 until stopped with Ctrl+C. The first packet establishes the zero direction.
 The controller prints commanded turret angles as it moves. Servo output is
 simulated unless the PWM environment variables below are configured. The web dashboard receives the controller's GPS data. Other dashboard values

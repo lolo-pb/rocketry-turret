@@ -23,6 +23,7 @@ typedef enum Event {
     NO_EVENT,
     START_AUTOMATIC,
     START_MANUAL,
+    START_TRACKING,
     TARGET_ACQUIRED,
     ARM,
     LANDING_DETECTED

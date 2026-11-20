@@ -1111,6 +1111,13 @@
         grid-template-columns: 1fr 1fr;
       }
     }
+    [hidden] { display: none !important; }
+    .startup-panel { padding-bottom: 20px; }
+    .receiver-list { padding: 16px; display: grid; gap: 8px; }
+    .receiver-row { padding: 12px; border: 1px solid #454b47; background: #101512; color: #d9e6d9; }
+    .start-tracking { margin: 16px; padding: 12px 18px; border: 1px solid var(--phosphor); background: #173520; color: #e6f7e7; cursor: pointer; }
+    .start-tracking:disabled { opacity: .45; cursor: default; }
+    .startup-message { margin: 0 16px; color: #e9b77d; }
   </style>
 </head>
 <body>
@@ -1122,7 +1129,7 @@
       </div>
       <div class="annunciators">
         <span id="connection" class="annunciator disconnected">Data link offline</span>
-        <span class="annunciator">Simulation</span>
+        <span id="controller-state" class="annunciator">State unavailable</span>
       </div>
       <div class="mission-clock">
         <span>Flight time</span>
@@ -1131,7 +1138,14 @@
     </header>
 
     <main class="dashboard-grid">
-      <section class="system-panel rocket-panel" aria-labelledby="rocket-title">
+      <section class="system-panel startup-panel" id="startup-panel" aria-labelledby="startup-title">
+        <h2 class="panel-title" id="startup-title">Ground station <small>Disarmed</small></h2>
+        <div class="receiver-list" id="receiver-list">Waiting for controller</div>
+        <button class="start-tracking" id="start-tracking" disabled>Start tracking</button>
+        <p class="startup-message" id="startup-message" role="status"></p>
+      </section>
+
+      <section class="system-panel rocket-panel" id="tracking-panel" hidden aria-labelledby="rocket-title">
         <h2 class="panel-title" id="rocket-title">
           <b>01</b> Rocket / flight vehicle
           <small>Motion + navigation</small>
@@ -1235,8 +1249,8 @@
 
       <section class="tactical-panel" aria-labelledby="tactical-title">
         <h2 class="panel-title" id="tactical-title">
-          <b>02</b> 3D Sim
-          <small>GPS / ENU simulation</small>
+          <b>02</b> 3D Tracking
+          <small>GPS / ENU</small>
         </h2>
         <div class="viewport" id="three-d-viewport" aria-label="Three-dimensional GPS tracking view">
           <canvas class="track-canvas" id="track-canvas"></canvas>
@@ -1554,7 +1568,53 @@
       );
     }
 
+    function updateState(telemetry) {
+      const connected = telemetry.controller_connected;
+      const state = telemetry.state;
+      document.getElementById("controller-state").textContent = connected
+        ? state.replaceAll("_", " ")
+        : "Controller offline";
+      document.getElementById("connection").textContent = connected ? "Controller online" : "Controller offline";
+      document.getElementById("connection").className = `annunciator ${connected ? "connected" : "disconnected"}`;
+      document.getElementById("startup-panel").hidden = state !== "DISARMED";
+      document.getElementById("tracking-panel").hidden = state === "DISARMED";
+      document.getElementById("start-tracking").disabled = !connected || state !== "DISARMED";
+      const list = document.getElementById("receiver-list");
+      const receivers = telemetry.receivers || [];
+      const rows = receivers.map((receiver) => {
+        const row = document.createElement("div");
+        row.className = "receiver-row";
+        row.textContent = `Receiver ${receiver.id} · ${receiver.connected ? "Connected" : "Disconnected"}`;
+        return row;
+      });
+      if (!rows.length) {
+        const row = document.createElement("div");
+        row.className = "receiver-row";
+        row.textContent = "No receivers";
+        rows.push(row);
+      }
+      list.replaceChildren(...rows);
+    }
+
+    document.getElementById("start-tracking").addEventListener("click", async () => {
+      const button = document.getElementById("start-tracking");
+      const message = document.getElementById("startup-message");
+      button.disabled = true;
+      message.textContent = "";
+      try {
+        const response = await fetch("/api/start-tracking", { method: "POST" });
+        if (!response.ok) {
+          const result = await response.json();
+          throw new Error(result.detail || "Command failed");
+        }
+      } catch (error) {
+        message.textContent = error.message;
+        button.disabled = false;
+      }
+    });
+
     function updateTelemetry(telemetry) {
+      updateState(telemetry);
       document.getElementById("elapsed_s").textContent = fixed(telemetry.elapsed_s, " s");
       setInstrumentValue("altitude_m", telemetry.altitude_m);
       setInstrumentValue("speed_m_s", telemetry.speed_m_s);
@@ -1593,13 +1653,14 @@
       const connection = document.getElementById("connection");
 
       socket.onopen = () => {
-        connection.textContent = "Data link online";
-        connection.className = "annunciator connected";
+        connection.textContent = "Connecting to controller";
       };
 
       socket.onmessage = (event) => updateTelemetry(JSON.parse(event.data));
 
       socket.onclose = () => {
+        document.getElementById("controller-state").textContent = "State unavailable";
+        document.getElementById("start-tracking").disabled = true;
         connection.textContent = "Data link offline";
         connection.className = "annunciator disconnected";
         setTimeout(connect, 1000);
