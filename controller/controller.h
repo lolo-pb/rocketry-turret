@@ -50,7 +50,10 @@ struct GroundStationState {
 extern struct RocketState rocket_state;
 extern struct GroundStationState gs_state;
 
+typedef enum ReceiverType { FEATHERWEIGHT, TELEDONGLE } ReceiverType;
+
 struct Receiver {
+    ReceiverType type;
     int fd;
     unsigned id;
     char record[1024];
@@ -80,7 +83,7 @@ Event automatic_update(const struct Controller *controller);
 Event manual_update(const struct Controller *controller);
 struct ServoOutput;
 Event tracker_update(struct Controller *controller, struct ServoOutput *servos);
-bool parse_record(const char *record, struct Telemetry *sample);
+bool parse_record(const char *record, struct Telemetry *sample, char *fields, size_t size);
 int receiver_open(const char *path);
 struct pollfd;
 void receivers_read(struct Controller *controller, const struct pollfd *inputs);

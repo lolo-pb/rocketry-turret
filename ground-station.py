@@ -5,6 +5,7 @@ import asyncio
 import contextlib
 import json
 import math
+import os
 import subprocess
 import tempfile
 import threading
@@ -167,7 +168,8 @@ async def telemetry_socket(websocket: WebSocket):
 def main():
     parser = argparse.ArgumentParser(description="Run the ground station and controller")
     parser.add_argument("--tracking", action="store_true", help="start directly in tracking mode")
-    parser.add_argument("receivers", nargs="*", help="receiver device or FIFO paths")
+    parser.add_argument("--log-dir", default="logs", help="directory for telemetry logs")
+    parser.add_argument("receivers", nargs="*", help="receiver paths; prefix TeleDongle paths with teledongle:")
     args = parser.parse_args()
 
     root = Path(__file__).resolve().parent
@@ -180,7 +182,7 @@ def main():
             command.append("--tracking")
         command.append(controller_socket)
         command.extend(args.receivers)
-        controller = subprocess.Popen(command)
+        controller = subprocess.Popen(command, env={**os.environ, "TURRET_LOG_DIR": args.log_dir})
         server = uvicorn.Server(
             uvicorn.Config(app, host=HOST, port=PORT, timeout_graceful_shutdown=2)
         )

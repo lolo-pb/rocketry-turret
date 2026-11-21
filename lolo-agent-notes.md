@@ -11,8 +11,8 @@
 - [ ] Read live USB receivers on the Pi.
 - [ ] Validate packet integrity and tracker ID.
 
-- [ ] Connect the dashboard to the controller socket.
-- [ ] Serve the dashboard headlessly on the private network.
+- [X] Connect the dashboard to the controller socket.
+- [X] Serve the dashboard headlessly on the private network.
 
 - [ ] Add Commanding and Viewing roles for multiple laptops.
 - [ ] Show setup, arm, and tracking states on the dashboard.
@@ -23,6 +23,9 @@
 
 How the controller connects to the usb recievers,
 How the controller reads fro the recievers and not make that blocking,<Importan!/>
+We need to identify different recievers in the different usb ports.<Importan!/>
+Logging needs to be non blocking.
+The Featherweight manual labels GPS_STAT altitude ASL in feet, and the parser converts it to meters
 
 
 ## Tracker selection and packet integrity

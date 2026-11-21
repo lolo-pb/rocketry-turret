@@ -98,9 +98,29 @@ are zero until the controller supplies them.
 Build on the Pi with `make -C controller`. Pass receiver device paths such as
 `/dev/serial/by-id/...` in the same positions as the mock FIFOs. The controller
 configures serial devices for 115200 baud, 8N1. In tracking mode it uses fresh
-`CRC_OK TRK` records with a 3D fix. If multiple inputs supply a fix on the
-same loop pass, the first receiver in command-line order takes priority.
-Use receivers monitoring the same rocket.
+Featherweight `CRC_OK TRK` records with a 3D fix. If multiple Featherweight
+inputs supply a fix on the same loop pass, the first takes priority.
+
+Prefix TeleDongle device paths with `teledongle:`. Other paths, including
+the mock FIFO, are Featherweight inputs. For example:
+
+```sh
+python ground-station.py /dev/serial/by-path/FEATHERWEIGHT teledongle:/dev/serial/by-path/TELEDONGLE
+```
+
+Replace the example paths with the paths shown on your Pi. Configure the
+TeleDongle radio frequency and telemetry mode separately. The TeleMega v5
+parser logs recognized telemetry but does not control the turret.
+
+The controller creates `logs/raw-*.csv` and `logs/parsed-*.csv` for each
+session. Raw entries contain exact USB read bytes encoded as hex, including
+unrecognized packets. Parsed entries contain the recognized fields. The source
+includes the receiver number and each entry has a Pi receive timestamp.
+A logger thread writes buffered records independently of the control loop.
+If the queue fills or is busy, entries are dropped and the total is reported
+on shutdown. Use `--log-dir PATH` with `ground-station.py` to choose the
+destination. The hardware stream and TeleMega decoding still need verification
+against captures from the actual devices.
 
 Set the station coordinates in `controller/tracker.c` for your site.
 Elevation uses GPS altitude and station altitude in the same reference frame.

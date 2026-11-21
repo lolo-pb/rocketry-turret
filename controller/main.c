@@ -1,10 +1,12 @@
 #include "controller.h"
 #include "servos.h"
+#include "logger.h"
 
 #include <errno.h>
 #include <poll.h>
 #include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -54,7 +56,14 @@ int main(int argc, char **argv) {
   for (size_t i = 0; i < controller.recieverCount; i++) {
     receivers[i].id = i + 1;
     receivers[i].latest.fix = -1;
-    receivers[i].fd = receiver_open(argv[dashboard_socket_arg + 1 + i]);
+    const char *path = argv[dashboard_socket_arg + 1 + i];
+    if (strncmp(path, "teledongle:", 11) == 0) {
+      receivers[i].type = TELEDONGLE;
+      path += 11;
+    } else if (strncmp(path, "featherweight:", 14) == 0) {
+      path += 14;
+    }
+    receivers[i].fd = receiver_open(path);
     if (receivers[i].fd < 0) {
       perror(argv[dashboard_socket_arg + 1 + i]);
       return 1;
@@ -77,6 +86,22 @@ int main(int argc, char **argv) {
     return 1;
   }
 
+
+  const char *log_dir = getenv("TURRET_LOG_DIR");
+  if (!log_dir)
+    log_dir = "logs";
+  if (mkdir(log_dir, 0700) < 0 && errno != EEXIST) {
+    perror("create log directory");
+    servos_close(&servos);
+    unlink(argv[dashboard_socket_arg]);
+    return 1;
+  }
+  if (logger_start(log_dir) < 0) {
+    perror("start telemetry logger");
+    servos_close(&servos);
+    unlink(argv[dashboard_socket_arg]);
+    return 1;
+  }
 
   int result = 0;
 
@@ -117,6 +142,7 @@ int main(int argc, char **argv) {
     dashboard_publish(&dashboard, &controller);
   }
 
+  logger_stop();
   servos_close(&servos);
   unlink(argv[dashboard_socket_arg]);
   return result;

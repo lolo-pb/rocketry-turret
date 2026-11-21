@@ -1,4 +1,6 @@
 #include "controller.h"
+#include "logger.h"
+#include "telemega.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -51,17 +53,36 @@ static bool receiver_read(struct Receiver *receiver, struct Telemetry *sample)
     }
 
     bool found = false;
+    char source[32];
+    snprintf(source, sizeof source, "%s-%u",
+             receiver->type == TELEDONGLE ? "teledongle" : "featherweight", receiver->id);
+    if (count > 0)
+        logger_raw(source, bytes, count);
     for (ssize_t i = 0; i < count; i++) {
-        if (bytes[i] == '@') {
-            if (receiver->used) {
-                receiver->record[receiver->used] = '\0';
-                if (parse_record(receiver->record, &receiver->latest) && receiver->latest.tracker_fix && sample) {
+        bool complete = receiver->type == TELEDONGLE ? bytes[i] == '\n' : bytes[i] == '@';
+        if (complete && receiver->used) {
+            receiver->record[receiver->used] = '\0';
+            char fields[1024];
+            if (receiver->type == TELEDONGLE) {
+                if (telemega_parse(receiver->record, fields, sizeof fields))
+                    logger_parsed(source, fields);
+            } else if (parse_record(receiver->record, &receiver->latest, fields, sizeof fields)) {
+                logger_parsed(source, fields);
+                if (receiver->latest.tracker_fix && sample) {
                     *sample = receiver->latest;
                     found = true;
                 }
             }
             receiver->used = 0;
-        } else if (!receiver->used) {
+        }
+        if (receiver->type == FEATHERWEIGHT) {
+            if (bytes[i] == '@') {
+                receiver->record[receiver->used++] = '@';
+                continue;
+            }
+            if (!receiver->used)
+                continue;
+        } else if (complete) {
             continue;
         }
         if (receiver->used == sizeof receiver->record - 1 || !bytes[i]) {
@@ -77,7 +98,8 @@ void receivers_read(struct Controller *controller, const struct pollfd *inputs)
 {
     bool selected = false;
     for (size_t i = 0; i < controller->recieverCount; i++) {
-        if (inputs[i].revents && receiver_read(&controller->receivers[i], selected ? NULL : &rocket_state.telemetry))
+        if (inputs[i].revents && receiver_read(&controller->receivers[i],
+                selected || controller->receivers[i].type == TELEDONGLE ? NULL : &rocket_state.telemetry))
             selected = true;
     }
 }
