@@ -25,6 +25,7 @@ How the controller connects to the usb recievers,
 How the controller reads fro the recievers and not make that blocking,<Importan!/>
 We need to identify different recievers in the different usb ports.<Importan!/>
 Logging needs to be non blocking.
+We have 2 loggings, the raw and parse. if logging proves slow or problematic we might want to remove one.
 The Featherweight manual labels GPS_STAT altitude ASL in feet, and the parser converts it to meters
 
 
