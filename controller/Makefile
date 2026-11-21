@@ -1,11 +1,11 @@
 CFLAGS ?= -O2 -Wall -Wextra -Wpedantic
 CPPFLAGS += -D_POSIX_C_SOURCE=200809L
-sources = main.c parser.c receivers.c state.c dashboard_ipc.c automatic.c manual.c tracker.c servos.c telemega.c logger.c
+sources = main.c featherweight.c receivers.c state.c dashboard_ipc.c automatic.c manual.c tracker.c servos.c telemega.c logger.c
 
 .PHONY: controller clean test
 controller: build/controller
 
-build/controller: $(sources) controller.h servos.h telemega.h logger.h | build
+build/controller: $(sources) controller.h servos.h parsers.h logger.h | build
 	$(CC) $(CPPFLAGS) $(CFLAGS) -std=c11 $(sources) $(LDFLAGS) -pthread -lm -o $@
 
 build:
