@@ -1,4 +1,4 @@
-## l0l0 logs 11/20/2026 (18:07) Mk3 on the way
+## l0l0 logs 11/21/2026 (00:02) Mk3 on the way
 
 | Servo     | Pi GPIO | Physical header pin |
 |  ---      |  ---:   |    ---:             |
@@ -9,6 +9,8 @@ Estos son losmpines de GPIO para los servos
 
 la lat y long de la gs esta de momento hardcodeada 
 hay un todo list en lolo-notes.md
+
+Podemos usar el arduino de la anterior para el joystica  usb y usarlo desde la laptop.
 
 ## l0l0 logs 11/20/2026 (11:00) Mk3 on the way
 

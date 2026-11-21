@@ -122,7 +122,7 @@ on shutdown. Use `--log-dir PATH` with `ground-station.py` to choose the
 destination. The hardware stream and TeleMega decoding still need verification
 against captures from the actual devices.
 
-Set the station coordinates in `controller/tracker.c` for your site.
+Set the station coordinates in `controller/main.c` for your site.
 Elevation uses GPS altitude and station altitude in the same reference frame.
 Point the calibrated zero direction toward the rocket before tracking. The
 first valid tracking fix establishes the horizontal zero bearing. Tracking

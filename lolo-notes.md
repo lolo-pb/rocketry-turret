@@ -19,6 +19,8 @@
 
 - [ ] Define landing detection and show the estimated landing position.
 
+- [ ] Joystick with the arduino nano to usb to the laptop.
+
 ## Things to keep in mind
 
 How the controller connects to the usb recievers,
