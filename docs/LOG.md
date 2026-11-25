@@ -1,3 +1,22 @@
+## l0l0 logs 11/24/2026 Mk3 - Manual controls via joystick
+
+ Made the joystick work, the actual case itself is a bit hacky 
+for now but it will be remade soon. The Joystick connects via USB 
+directly to the laptop connected to the GS, and is used to controll
+the manual setup
+
+Controls:
+- go in and click manual setup
+- connect the jpystick and aim at rocket
+- Pressing the joystick in (R3 style) will arm the turret
+- while tracking, double pres will go back to manual setup
+
+Logs should be kept and well loged even while in maual setup
+in case manual controll of the turret is needed.
+
+will note details of the jpystick itself on a drive later
+
+
 ## l0l0 logs 11/21/2026 (00:02) Mk3 on the way
 
 | Servo     | Pi GPIO | Physical header pin |
