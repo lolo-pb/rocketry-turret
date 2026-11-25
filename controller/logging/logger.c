@@ -4,6 +4,8 @@
 #include <pthread.h>
 #include <stdatomic.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <sys/stat.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
@@ -157,4 +159,20 @@ void logger_stop(void)
     if (fclose(parsed_file))
         perror("close parsed telemetry log");
     fprintf(stderr, "Telemetry log dropped %lu records\n", atomic_load(&dropped));
+}
+
+int initialize_logging(void)
+{
+    const char *directory = getenv("TURRET_LOG_DIR");
+    if (!directory)
+        directory = "logs";
+    if (mkdir(directory, 0700) < 0 && errno != EEXIST) {
+        perror("create log directory");
+        return -1;
+    }
+    if (logger_start(directory) < 0) {
+        perror("start telemetry logger");
+        return -1;
+    }
+    return 0;
 }

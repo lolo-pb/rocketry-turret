@@ -1,5 +1,5 @@
-#ifndef CONTROLLER_H
-#define CONTROLLER_H
+#ifndef MAIN2_H
+#define MAIN2_H
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -7,8 +7,6 @@
 
 #define STEP_INTERVAL_MS 40
 #define STEP_DEG 1
-#define AZIMUTH_DIRECTION 1
-#define ELEVATION_DIRECTION 1
 
 typedef enum State {
     DISARMED,
@@ -45,21 +43,11 @@ struct GroundStationState {
     int elevation_min_deg, elevation_max_deg;
     int azimuth_min_deg, azimuth_max_deg;
     int azimuth_zero_deg, elevation_zero_deg;
+    int azimuth_direction, elevation_direction;
 };
 
 extern struct RocketState rocket_state;
 extern struct GroundStationState gs_state;
-
-typedef enum ReceiverType { FEATHERWEIGHT, TELEDONGLE } ReceiverType;
-
-struct Receiver {
-    ReceiverType type;
-    int fd;
-    unsigned id;
-    char record[1024];
-    size_t used;
-    struct Telemetry latest;
-};
 
 struct Turret {
     int azimuth_deg, elevation_deg;  // Commanded turret angles relative to calibrated zero
@@ -71,6 +59,7 @@ struct Turret {
     double last_east_m, last_north_m, last_up_m;
 };
 
+struct Receiver;
 struct Controller {
     struct Turret turret;
     State state;
@@ -78,24 +67,6 @@ struct Controller {
     size_t recieverCount;
 };
 
-bool transition(struct Controller *controller, Event event);
-Event automatic_update(const struct Controller *controller);
-struct ServoOutput;
-void manual_input(int x, int y);
-Event manual_update(struct Controller *controller, struct ServoOutput *servos);
-Event tracker_update(struct Controller *controller, struct ServoOutput *servos);
-int receiver_open(const char *path);
-struct pollfd;
-void receivers_read(struct Controller *controller, const struct pollfd *inputs);
-
-struct Dashboard {
-    int listener, client;
-    char line[256];
-    size_t used;
-};
-int dashboard_open(struct Dashboard *dashboard, const char *path);
-void dashboard_accept(struct Dashboard *dashboard, const struct Controller *controller);
-void dashboard_read(struct Dashboard *dashboard, struct Controller *controller);
-void dashboard_publish(struct Dashboard *dashboard, const struct Controller *controller);
+int initialize_controller(struct Controller *controller, struct Receiver *receivers, int argc, char **argv, int *socket_arg);
 
 #endif

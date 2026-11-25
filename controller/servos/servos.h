@@ -1,5 +1,5 @@
-#ifndef SERVOS_H
-#define SERVOS_H
+#ifndef SERVOS2_H
+#define SERVOS2_H
 
 struct Servo {
     int dir, min_us, max_us;

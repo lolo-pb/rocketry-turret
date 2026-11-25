@@ -1,4 +1,4 @@
-#include "controller.h"
+#include "main.h"
 
 Event automatic_update(const struct Controller *controller)
 {

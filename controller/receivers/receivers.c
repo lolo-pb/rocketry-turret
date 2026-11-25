@@ -1,4 +1,5 @@
-#include "controller.h"
+#include "receivers.h"
+#include "inputs.h"
 #include "logger.h"
 #include "parsers.h"
 
@@ -6,6 +7,7 @@
 #include <fcntl.h>
 #include <poll.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <termios.h>
@@ -102,4 +104,32 @@ void receivers_read(struct Controller *controller, const struct pollfd *inputs)
                 selected || controller->receivers[i].type == TELEDONGLE ? NULL : &rocket_state.telemetry))
             selected = true;
     }
+}
+
+int initialize_receivers(struct Controller *controller, int argc, char **argv, int socket_arg)
+{
+    (void)argc;
+    for (size_t i = 0; i < controller->recieverCount; i++) {
+        struct Receiver *receiver = &controller->receivers[i];
+        receiver->id = i + 1;
+        receiver->latest.fix = -1;
+        const char *path = argv[socket_arg + 1 + i];
+        if (strncmp(path, "teledongle:", 11) == 0) {
+            receiver->type = TELEDONGLE;
+            path += 11;
+        } else if (strncmp(path, "featherweight:", 14) == 0) {
+            path += 14;
+        }
+        receiver->fd = receiver_open(path);
+        if (receiver->fd < 0) {
+            perror(argv[socket_arg + 1 + i]);
+            return -1;
+        }
+    }
+    return 0;
+}
+
+void read_receivers(struct Inputs *inputs, struct Controller *controller)
+{
+    receivers_read(controller, &inputs->pool[FIRST_RECEIVER_SLOT]);
 }

@@ -1,4 +1,4 @@
-#include "controller.h"
+#include "main.h"
 #include "servos.h"
 
 #include <math.h>
@@ -58,10 +58,10 @@ Event manual_update(struct Controller *controller, struct ServoOutput *servos)
 
     int azimuth = advance_axis(stick_x, CENTER_X, turret->azimuth_deg, &azimuth_fraction,
                               gs_state.azimuth_min_deg, gs_state.azimuth_max_deg,
-                              gs_state.azimuth_zero_deg, AZIMUTH_DIRECTION);
+                              gs_state.azimuth_zero_deg, gs_state.azimuth_direction);
     int elevation = advance_axis(stick_y, CENTER_Y, turret->elevation_deg, &elevation_fraction,
                                 gs_state.elevation_min_deg, gs_state.elevation_max_deg,
-                                gs_state.elevation_zero_deg, ELEVATION_DIRECTION);
+                                gs_state.elevation_zero_deg, gs_state.elevation_direction);
     if (azimuth != turret->azimuth_deg || elevation != turret->elevation_deg) {
         servos_write(servos, azimuth, elevation);
         turret->azimuth_deg = turret->target_azimuth_deg = azimuth;

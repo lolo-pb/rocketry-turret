@@ -1,4 +1,4 @@
-#include "controller.h"
+#include "main.h"
 #include "servos.h"
 
 #include <math.h>
@@ -47,10 +47,10 @@ static void update_target(struct Turret *turret, const struct Telemetry *sample)
   turret->last_up_m = up;
   if (horizontal >= 1e-6) {
     double yaw = remainder((bearing - turret->zero_bearing_rad) / radians, 360.0);
-    turret->target_azimuth_deg = reachable_angle(yaw, gs_state.azimuth_min_deg, gs_state.azimuth_max_deg, gs_state.azimuth_zero_deg, AZIMUTH_DIRECTION);
+    turret->target_azimuth_deg = reachable_angle(yaw, gs_state.azimuth_min_deg, gs_state.azimuth_max_deg, gs_state.azimuth_zero_deg, gs_state.azimuth_direction);
   }
   double tilt = atan2(up, horizontal) / radians;
-  turret->target_elevation_deg = reachable_angle(tilt, gs_state.elevation_min_deg, gs_state.elevation_max_deg, gs_state.elevation_zero_deg, ELEVATION_DIRECTION);
+  turret->target_elevation_deg = reachable_angle(tilt, gs_state.elevation_min_deg, gs_state.elevation_max_deg, gs_state.elevation_zero_deg, gs_state.elevation_direction);
 }
 
 Event tracker_update(struct Controller *controller, struct ServoOutput *servos) {

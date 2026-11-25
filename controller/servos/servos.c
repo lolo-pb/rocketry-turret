@@ -1,5 +1,5 @@
 #include "servos.h"
-#include "controller.h"
+#include "main.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -93,9 +93,9 @@ static int write_angle(struct Servo *servo, int angle, enum Axis axis)
 
 void servos_write(struct ServoOutput *output, int azimuth, int elevation)
 {
-    if (write_angle(&output->azimuth, gs_state.azimuth_zero_deg + AZIMUTH_DIRECTION * azimuth, AZIMUTH) < 0)
+    if (write_angle(&output->azimuth, gs_state.azimuth_zero_deg + gs_state.azimuth_direction * azimuth, AZIMUTH) < 0)
         perror("write azimuth PWM");
-    if (write_angle(&output->elevation, gs_state.elevation_zero_deg + ELEVATION_DIRECTION * elevation, ELEVATION) < 0)
+    if (write_angle(&output->elevation, gs_state.elevation_zero_deg + gs_state.elevation_direction * elevation, ELEVATION) < 0)
         perror("write elevation PWM");
 }
 

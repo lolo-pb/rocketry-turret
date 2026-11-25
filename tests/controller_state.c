@@ -1,4 +1,5 @@
-#include "controller.h"
+#include "main.h"
+#include "state.h"
 #include <assert.h>
 
 int main(void)

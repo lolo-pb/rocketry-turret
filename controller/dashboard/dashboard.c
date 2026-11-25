@@ -1,4 +1,8 @@
-#include "controller.h"
+#include "dashboard.h"
+#include "inputs.h"
+#include "receivers.h"
+#include "modes/modes.h"
+#include "state.h"
 
 #include <ctype.h>
 #include <errno.h>
@@ -15,7 +19,7 @@ static const char *const state_names[] = {
     [TRACKING] = "TRACKING", [LANDED] = "LANDED"
 };
 
-int dashboard_open(struct Dashboard *dashboard, const char *path)
+static int dashboard_open(struct Dashboard *dashboard, const char *path)
 {
     struct sockaddr_un address = { .sun_family = AF_UNIX };
     if (strlen(path) >= sizeof address.sun_path) {
@@ -89,7 +93,7 @@ void dashboard_publish(struct Dashboard *dashboard, const struct Controller *con
     free(json);
 }
 
-void dashboard_accept(struct Dashboard *dashboard, const struct Controller *controller)
+static void dashboard_accept(struct Dashboard *dashboard, const struct Controller *controller)
 {
     int fd = accept(dashboard->listener, NULL, NULL);
     if (fd < 0)
@@ -140,7 +144,7 @@ static void command(struct Dashboard *dashboard, struct Controller *controller)
         dashboard_publish(dashboard, controller);
 }
 
-void dashboard_read(struct Dashboard *dashboard, struct Controller *controller)
+static void dashboard_read(struct Dashboard *dashboard, struct Controller *controller)
 {
     char bytes[512];
     ssize_t count = recv(dashboard->client, bytes, sizeof bytes, MSG_DONTWAIT);
@@ -159,4 +163,21 @@ void dashboard_read(struct Dashboard *dashboard, struct Controller *controller)
             dashboard->line[dashboard->used++] = bytes[i];
         }
     }
+}
+
+int initialize_dashboard(struct Dashboard *dashboard, const char *path)
+{
+    if (dashboard_open(dashboard, path) < 0) {
+        perror(path);
+        return -1;
+    }
+    return 0;
+}
+
+void read_dashboard(struct Inputs *inputs, struct Dashboard *dashboard, struct Controller *controller)
+{
+    if (inputs->pool[1].revents)
+        dashboard_read(dashboard, controller);
+    if (inputs->pool[0].revents & POLLIN)
+        dashboard_accept(dashboard, controller);
 }
