@@ -16,6 +16,17 @@ in case manual controll of the turret is needed.
 
 will note details of the jpystick itself on a drive later
 
+BTW : <Important!/>
+
+Raspi credentials:
+
+user l0l0
+pass rbp
+hostname gs
+
+conect vias ssh for maintenence with :
+ssh l0l0@gs
+then pass : rbp
 
 ## l0l0 logs 11/21/2026 (00:02) Mk3 on the way
 
