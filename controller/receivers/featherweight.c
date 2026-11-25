@@ -1,12 +1,12 @@
 #include "main.h"
-#include "parsers.h"
+#include "receivers.h"
 
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
 
-bool parse_record(const char *record, struct Telemetry *sample, char *fields, size_t size)
+bool featherweight_parse(const char *record, struct Telemetry *sample, char *fields, size_t size)
 {
     char crc[16], unit[8], id[64], timestamp[32];
     unsigned length, year, month, day, satellites, sat24, sat32, sat40;

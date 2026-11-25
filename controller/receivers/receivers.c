@@ -1,7 +1,6 @@
 #include "receivers.h"
 #include "inputs.h"
 #include "logger.h"
-#include "parsers.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -68,7 +67,7 @@ static bool receiver_read(struct Receiver *receiver, struct Telemetry *sample)
             if (receiver->type == TELEDONGLE) {
                 if (telemega_parse(receiver->record, fields, sizeof fields))
                     logger_parsed(source, fields);
-            } else if (parse_record(receiver->record, &receiver->latest, fields, sizeof fields)) {
+            } else if (featherweight_parse(receiver->record, &receiver->latest, fields, sizeof fields)) {
                 logger_parsed(source, fields);
                 if (receiver->latest.tracker_fix && sample) {
                     *sample = receiver->latest;

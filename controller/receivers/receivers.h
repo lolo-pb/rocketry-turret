@@ -19,6 +19,8 @@ struct Receiver {
 struct pollfd;
 int receiver_open(const char *path);
 void receivers_read(struct Controller *controller, const struct pollfd *inputs);
+bool featherweight_parse(const char *record, struct Telemetry *sample, char *fields, size_t size);
+bool telemega_parse(const char *line, char *output, size_t size);
 
 struct Inputs;
 int initialize_receivers(struct Controller *controller, int argc, char **argv, int socket_arg);

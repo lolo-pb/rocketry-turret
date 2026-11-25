@@ -5,7 +5,7 @@ sources = main.c inputs.c state.c receivers/receivers.c receivers/featherweight.
 .PHONY: controller clean test
 controller: build/controller
 
-build/controller: $(sources) main.h inputs.h state.h receivers/receivers.h receivers/parsers.h dashboard/dashboard.h modes/modes.h servos/servos.h logging/logger.h | build
+build/controller: $(sources) main.h inputs.h state.h receivers/receivers.h dashboard/dashboard.h modes/modes.h servos/servos.h logging/logger.h | build
 	$(CC) $(CPPFLAGS) $(CFLAGS) -std=c11 $(sources) $(LDFLAGS) -pthread -lm -o $@
 
 build:
