@@ -158,8 +158,12 @@ Start the controller and web server:
 python ground-station.py
 ```
 
-Open `http://<pi-ip-address>:8000` on a device in the same network. Pass
-receiver paths as arguments. Add `--tracking` to start directly in tracking
+The first launch creates a self-signed HTTPS certificate on the Pi using
+OpenSSL. Open `https://<pi-ip-address>:8000` in Chrome on a laptop on the
+same network. On the certificate warning, choose **Advanced**, then **Proceed**.
+Select **Manual setup** and **Connect joystick** to use the laptop's Nano.
+
+Pass receiver paths as arguments. Add `--tracking` to start directly in tracking
 mode. The looping mock receiver instructions above provide simulated GPS.
 Stop the ground station with `Ctrl+C`.
 

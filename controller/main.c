@@ -131,7 +131,7 @@ int main(int argc, char **argv) {
 
     Event event = NO_EVENT;
     if (controller.state == MANUAL_ACQUISITION)
-      event = manual_update(&controller);
+      event = manual_update(&controller, &servos);
     else if (controller.state == AUTOMATIC_ACQUISITION)
       event = automatic_update(&controller);
     else if (controller.state == TRACKING)

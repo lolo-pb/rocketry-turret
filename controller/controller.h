@@ -80,8 +80,9 @@ struct Controller {
 
 bool transition(struct Controller *controller, Event event);
 Event automatic_update(const struct Controller *controller);
-Event manual_update(const struct Controller *controller);
 struct ServoOutput;
+void manual_input(int x, int y);
+Event manual_update(struct Controller *controller, struct ServoOutput *servos);
 Event tracker_update(struct Controller *controller, struct ServoOutput *servos);
 int receiver_open(const char *path);
 struct pollfd;

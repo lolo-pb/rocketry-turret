@@ -121,7 +121,17 @@ static void command(struct Dashboard *dashboard, struct Controller *controller)
     else if (!strcmp(line, "\"ARM\""))
         event = ARM;
 
-    bool accepted = transition(controller, event);
+    unsigned x, y;
+    int end = 0;
+    bool accepted;
+    if (controller->state == MANUAL_ACQUISITION &&
+        sscanf(line, "\"JOYSTICK %4u %4u\"%n", &x, &y, &end) == 2 &&
+        end && !line[end] && x <= 1023 && y <= 1023) {
+        manual_input(x, y);
+        accepted = true;
+    } else {
+        accepted = transition(controller, event);
+    }
     char reply[128];
     snprintf(reply, sizeof reply, "{\"type\":\"reply\",\"accepted\":%s,\"state\":\"%s\"}\n",
              accepted ? "true" : "false", state_names[controller->state]);
