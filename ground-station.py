@@ -3,6 +3,7 @@
 import argparse
 import asyncio
 import contextlib
+import ipaddress
 import json
 import math
 import os
@@ -107,6 +108,18 @@ async def read_controller():
 async def lifespan(_app):
     task = asyncio.create_task(read_controller())
     try:
+        try:
+            addresses = subprocess.check_output(["hostname", "-I"], text=True).split()
+            found = False
+            for address in addresses:
+                ip = ipaddress.ip_address(address)
+                if ip.version == 4 and not ip.is_loopback and not ip.is_link_local:
+                    print(f"Dashboard on your network: https://{ip}:{PORT}", flush=True)
+                    found = True
+            if not found:
+                print("No network IPv4 address found.", flush=True)
+        except (OSError, subprocess.CalledProcessError, ValueError):
+            print("Could not determine a network address. Run hostname -I to find it.", flush=True)
         yield
     finally:
         task.cancel()
