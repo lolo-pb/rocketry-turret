@@ -1,6 +1,10 @@
 const connect = document.getElementById("connect-joystick");
 const input = document.getElementById("joystick-input");
 const status = document.getElementById("joystick-status");
+let mode;
+window.addEventListener("rocket-telemetry", (event) => {
+  mode = event.detail.controller_connected ? event.detail.state : null;
+});
 
 if (!navigator.serial) {
   connect.disabled = true;
@@ -17,6 +21,8 @@ connect.addEventListener("click", async () => {
   let sending = false;
   let sendError;
   let lastSent = -Infinity;
+  let lastPress = 0;
+  let axisRequest;
   const requests = new AbortController();
 
   async function sendAxes(x, y) {
@@ -68,16 +74,23 @@ connect.addEventListener("click", async () => {
         if (x > 1023 || y > 1023) continue;
         input.textContent = `X ${x} · Y ${y} · Button ${pressed}`;
         if (previousButton === 0 && pressed === 1) {
-          clearTimeout(staleTimer);
-          requests.abort();
-          status.textContent = "Waiting for the controller";
-          const reply = await fetch("/api/arm", { method: "POST" });
-          if (!reply.ok) {
-            const error = await reply.json();
-            throw new Error(error.detail || "Could not start antenna tracking");
+          const now = performance.now();
+          let url;
+          if (mode === "MANUAL_ACQUISITION") {
+            url = "/api/arm";
+            lastPress = 0;
+          } else if (mode === "TRACKING") {
+            if (lastPress && now - lastPress <= 600) url = "/api/start-manual";
+            lastPress = url ? 0 : now;
           }
-          status.textContent = "Antenna tracking started";
-          return;
+          if (url) {
+            await axisRequest;
+            if (sendError) throw sendError;
+            const reply = await fetch(url, { method: "POST" });
+            const result = await reply.json();
+            if (!reply.ok) throw new Error(result.detail || "Controller rejected the command");
+            mode = result.state;
+          }
         }
         previousButton = pressed;
         latest = { x, y };
@@ -88,8 +101,8 @@ connect.addEventListener("click", async () => {
           status.textContent = "Waiting for joystick data";
         }, 250);
       }
-      if (latest && !sending && performance.now() - lastSent >= 40) {
-        void sendAxes(latest.x, latest.y);
+      if (latest && mode === "MANUAL_ACQUISITION" && !sending && performance.now() - lastSent >= 40) {
+        axisRequest = sendAxes(latest.x, latest.y);
       }
     }
     clearReadout();
