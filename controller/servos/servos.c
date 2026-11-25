@@ -81,11 +81,8 @@ static int write_angle(struct Servo *servo, int angle, enum Axis axis)
     }
     int min = axis == AZIMUTH ? gs_state.azimuth_min_deg : gs_state.elevation_min_deg;
     int max = axis == AZIMUTH ? gs_state.azimuth_max_deg : gs_state.elevation_max_deg;
-    int duty_ns = servo->min_us * 1000 +
-        (int)((long long)(servo->max_us - servo->min_us) * 1000 *
-              (angle - min) / (max - min));
-    if (attribute(servo->dir, "duty_cycle", duty_ns) ||
-        (!servo->started && attribute(servo->dir, "enable", 1)))
+    int duty_ns = servo->min_us * 1000 + (int)((long long)(servo->max_us - servo->min_us) * 1000 * (angle - min) / (max - min));
+    if (attribute(servo->dir, "duty_cycle", duty_ns) || (!servo->started && attribute(servo->dir, "enable", 1)))
         return -1;
     servo->started = 1;
     return 0;

@@ -12,7 +12,6 @@ struct Inputs {
 };
 
 /* Check both dashboard and receiver connections for input. */
-int poll_inputs(struct Inputs *inputs, const struct Controller *controller,
-                const struct Dashboard *dashboard);
+int poll_inputs(struct Inputs *inputs, const struct Controller *controller, const struct Dashboard *dashboard);
 
 #endif
