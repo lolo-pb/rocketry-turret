@@ -1128,6 +1128,8 @@
       border-radius: 50%;
     }
     .joystick-pad svg { display: block; width: 100%; height: 100%; fill: none; stroke: #858d89; stroke-width: .4; }
+    .joystick-connection { position: absolute; left: 5%; bottom: 5%; width: 14px; height: 14px; border: 1px solid #626d6b; border-radius: 50%; background: #171b19; }
+    .joystick-connection.connected { border-color: #55d98a; background: #55d98a; box-shadow: 0 0 10px #55d98a; }
     .joystick-dot { position: absolute; z-index: 1; left: 50%; top: 50%; width: 16px; height: 16px; border: 4px solid var(--amber); border-radius: 50%; background: #080909; box-shadow: 0 0 13px #e8a92cbb; transform: translate(-50%, -50%); }
     .joystick-values { display: grid; grid-template-columns: 1fr 1fr 1.4fr; border: 1px solid #343735; margin-top: 8px; font-variant-numeric: tabular-nums; }
     .joystick-values > div { min-width: 0; padding: 10px; }
@@ -1179,6 +1181,7 @@
               <use href="#joystick-tick" transform="rotate(180 50 50)"/><use href="#joystick-tick" transform="rotate(225 50 50)"/><use href="#joystick-tick" transform="rotate(270 50 50)"/><use href="#joystick-tick" transform="rotate(315 50 50)"/>
             </svg>
             <div class="joystick-dot" id="joystick-dot" hidden></div>
+            <span class="joystick-connection" id="joystick-connection" role="img" aria-label="Joystick disconnected"></span>
           </div>
         </div>
         <div class="joystick-values">
@@ -1186,7 +1189,7 @@
           <div><span class="joystick-label">Y axis</span><strong id="joystick-y">—</strong></div>
           <div><span class="joystick-label">Switch</span><strong id="joystick-button">—</strong></div>
         </div>
-        <script type="module" src="/static/joystick.js"></script>
+        <script type="module" src="/static/joystick.js?v=2"></script>
       </section>
 
       <section class="system-panel rocket-panel" id="tracking-panel" hidden aria-labelledby="rocket-title">

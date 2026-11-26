@@ -3,6 +3,7 @@ const xReadout = document.getElementById("joystick-x");
 const yReadout = document.getElementById("joystick-y");
 const buttonReadout = document.getElementById("joystick-button");
 const dot = document.getElementById("joystick-dot");
+const connection = document.getElementById("joystick-connection");
 const status = document.getElementById("joystick-status");
 let mode;
 window.addEventListener("rocket-telemetry", (event) => {
@@ -60,6 +61,8 @@ connect.addEventListener("click", async () => {
     port = await navigator.serial.requestPort();
     await port.open({ baudRate: 115200 });
     opened = true;
+    connection.classList.add("connected");
+    connection.setAttribute("aria-label", "Joystick connected");
     reader = port.readable.getReader();
     status.textContent = "Waiting for joystick data";
     const decoder = new TextDecoder();
@@ -126,6 +129,8 @@ connect.addEventListener("click", async () => {
     clearReadout();
     status.textContent = error.message;
   } finally {
+    connection.classList.remove("connected");
+    connection.setAttribute("aria-label", "Joystick disconnected");
     clearTimeout(staleTimer);
     requests.abort();
     reader?.releaseLock();
