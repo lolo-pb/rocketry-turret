@@ -1118,6 +1118,24 @@
     .startup-command { margin: 16px; padding: 12px 18px; border: 1px solid var(--phosphor); background: #173520; color: #e6f7e7; cursor: pointer; }
     .startup-command:disabled { opacity: .45; cursor: default; }
     .startup-message { margin: 0 16px; color: #e9b77d; }
+    .joystick-panel { overflow-y: auto; }
+    .joystick-panel .startup-command { align-self: center; margin: 8px 0 12px; }
+    .joystick-panel .startup-message { margin: 0 0 12px; text-align: center; }
+    .joystick-instrument { border: 1px solid #343735; padding: 12px; }
+    .joystick-label { color: var(--phosphor-dim); font-size: .68rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+    .joystick-pad {
+      position: relative; width: min(100%, 260px); aspect-ratio: 1; margin: 16px auto;
+      border: 1px solid #626d6b; border-radius: 50%;
+      background: linear-gradient(90deg, transparent calc(50% - .5px), #3b4543 50%, transparent calc(50% + .5px)),
+                  linear-gradient(transparent calc(50% - .5px), #3b4543 50%, transparent calc(50% + .5px));
+    }
+    .joystick-pad::before { content: ''; position: absolute; inset: 25%; border: 1px dashed #35413f; border-radius: 50%; }
+    .joystick-dot { position: absolute; left: 50%; top: 50%; width: 16px; height: 16px; border: 2px solid var(--amber); border-radius: 50%; background: #080909; box-shadow: 0 0 13px #e8a92cbb; transform: translate(-50%, -50%); }
+    .joystick-values { display: grid; grid-template-columns: 1fr 1fr 1.4fr; border: 1px solid #343735; margin-top: 8px; font-variant-numeric: tabular-nums; }
+    .joystick-values > div { min-width: 0; padding: 10px; }
+    .joystick-values > div + div { border-left: 1px solid #343735; }
+    .joystick-values strong { display: block; margin-top: 4px; font-size: 1.15rem; font-weight: 500; text-transform: uppercase; }
+    .joystick-values .pressed { color: var(--amber); }
   </style>
 </head>
 <body>
@@ -1146,11 +1164,19 @@
         <p class="startup-message" id="startup-message" role="status"></p>
       </section>
 
-      <section class="system-panel" id="manual-panel" hidden aria-labelledby="manual-title">
+      <section class="system-panel joystick-panel" id="manual-panel" hidden aria-labelledby="manual-title">
         <h2 class="panel-title" id="manual-title">Manual setup</h2>
-        <button id="connect-joystick" type="button">Connect joystick</button>
-        <p class="startup-message" id="joystick-input">X — · Y — · Button —</p>
+        <button class="startup-command" id="connect-joystick" type="button">Connect joystick</button>
         <p class="startup-message" id="joystick-status" role="status">Connect the joystick to finish manual setup.</p>
+        <div class="joystick-instrument">
+          <span class="joystick-label">Stick position</span>
+          <div class="joystick-pad" aria-hidden="true"><div class="joystick-dot" id="joystick-dot" hidden></div></div>
+        </div>
+        <div class="joystick-values">
+          <div><span class="joystick-label">X axis</span><strong id="joystick-x">—</strong></div>
+          <div><span class="joystick-label">Y axis</span><strong id="joystick-y">—</strong></div>
+          <div><span class="joystick-label">Switch</span><strong id="joystick-button">—</strong></div>
+        </div>
         <script type="module" src="/static/joystick.js"></script>
       </section>
 
@@ -1577,7 +1603,7 @@
       );
     }
 
-    const startupButtons = document.querySelectorAll(".startup-command");
+    const startupButtons = document.querySelectorAll("#startup-panel .startup-command");
     let commandPending = false;
     let canStart = false;
 

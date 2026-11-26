@@ -1,5 +1,8 @@
 const connect = document.getElementById("connect-joystick");
-const input = document.getElementById("joystick-input");
+const xReadout = document.getElementById("joystick-x");
+const yReadout = document.getElementById("joystick-y");
+const buttonReadout = document.getElementById("joystick-button");
+const dot = document.getElementById("joystick-dot");
 const status = document.getElementById("joystick-status");
 let mode;
 window.addEventListener("rocket-telemetry", (event) => {
@@ -45,7 +48,11 @@ connect.addEventListener("click", async () => {
   }
 
   const clearReadout = () => {
-    input.textContent = "X — · Y — · Button —";
+    xReadout.textContent = "—";
+    yReadout.textContent = "—";
+    buttonReadout.textContent = "—";
+    buttonReadout.classList.remove("pressed");
+    dot.hidden = true;
     previousButton = undefined;
   };
   clearReadout();
@@ -72,7 +79,13 @@ connect.addEventListener("click", async () => {
         if (!match) continue;
         const [, x, y, pressed] = match.map(Number);
         if (x > 1023 || y > 1023) continue;
-        input.textContent = `X ${x} · Y ${y} · Button ${pressed}`;
+        xReadout.textContent = x;
+        yReadout.textContent = y;
+        buttonReadout.textContent = pressed ? "Pressed" : "Released";
+        buttonReadout.classList.toggle("pressed", Boolean(pressed));
+        dot.style.left = `${x / 1023 * 100}%`;
+        dot.style.top = `${(1 - y / 1023) * 100}%`;
+        dot.hidden = false;
         if (previousButton === 0 && pressed === 1) {
           const now = performance.now();
           let url;
