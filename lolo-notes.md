@@ -2,7 +2,7 @@
 
 ## TODO
 
-- [ ] `controller/manual.c` — manual acquisition
+- [/] `controller/manual.c` — manual acquisition
 - [ ] `controller/automatic.c` — automatic acquisition
 - [/] `controller/tracker.c` — locked tracking
 
@@ -15,11 +15,12 @@
 - [X] Serve the dashboard headlessly on the private network.
 
 - [ ] Add Commanding and Viewing roles for multiple laptops.
-- [ ] Show setup, arm, and tracking states on the dashboard.
+- [ ] Make the top nav actually show state, current mode, connection and potential errors, like are the servos initiated and that
 
 - [ ] Define landing detection and show the estimated landing position.
 
-- [ ] Joystick with the arduino nano to usb to the laptop.
+- [/] Joystick with the arduino nano to usb to the laptop.
+- [ ] Add a Sig-Strength thing to the manual calibration screen 
 
 ## Things to keep in mind
 
