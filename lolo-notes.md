@@ -22,6 +22,8 @@
 - [/] Joystick with the arduino nano to usb to the laptop.
 - [ ] Add a Sig-Strength thing to the manual calibration screen 
 
+- [ ] Make the pi host its own network
+
 ## Things to keep in mind
 
 How the controller connects to the usb recievers,
