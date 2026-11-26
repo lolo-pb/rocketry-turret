@@ -83,8 +83,11 @@ connect.addEventListener("click", async () => {
         yReadout.textContent = y;
         buttonReadout.textContent = pressed ? "Pressed" : "Released";
         buttonReadout.classList.toggle("pressed", Boolean(pressed));
-        dot.style.left = `${x / 1023 * 100}%`;
-        dot.style.top = `${(1 - y / 1023) * 100}%`;
+        const displayX = x / 1023 * 2 - 1;
+        const displayY = 1 - y / 1023 * 2;
+        const scale = Math.max(1, Math.hypot(displayX, displayY));
+        dot.style.left = `calc(50% + (50% - 8px) * ${displayX / scale})`;
+        dot.style.top = `calc(50% + (50% - 8px) * ${displayY / scale})`;
         dot.hidden = false;
         if (previousButton === 0 && pressed === 1) {
           const now = performance.now();

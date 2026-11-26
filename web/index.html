@@ -1125,12 +1125,10 @@
     .joystick-label { color: var(--phosphor-dim); font-size: .68rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
     .joystick-pad {
       position: relative; width: min(100%, 260px); aspect-ratio: 1; margin: 16px auto;
-      border: 1px solid #626d6b; border-radius: 50%;
-      background: linear-gradient(90deg, transparent calc(50% - .5px), #3b4543 50%, transparent calc(50% + .5px)),
-                  linear-gradient(transparent calc(50% - .5px), #3b4543 50%, transparent calc(50% + .5px));
+      border-radius: 50%;
     }
-    .joystick-pad::before { content: ''; position: absolute; inset: 25%; border: 1px dashed #35413f; border-radius: 50%; }
-    .joystick-dot { position: absolute; left: 50%; top: 50%; width: 16px; height: 16px; border: 2px solid var(--amber); border-radius: 50%; background: #080909; box-shadow: 0 0 13px #e8a92cbb; transform: translate(-50%, -50%); }
+    .joystick-pad svg { display: block; width: 100%; height: 100%; fill: none; stroke: #858d89; stroke-width: .4; }
+    .joystick-dot { position: absolute; z-index: 1; left: 50%; top: 50%; width: 16px; height: 16px; border: 4px solid var(--amber); border-radius: 50%; background: #080909; box-shadow: 0 0 13px #e8a92cbb; transform: translate(-50%, -50%); }
     .joystick-values { display: grid; grid-template-columns: 1fr 1fr 1.4fr; border: 1px solid #343735; margin-top: 8px; font-variant-numeric: tabular-nums; }
     .joystick-values > div { min-width: 0; padding: 10px; }
     .joystick-values > div + div { border-left: 1px solid #343735; }
@@ -1170,7 +1168,18 @@
         <p class="startup-message" id="joystick-status" role="status">Connect the joystick to finish manual setup.</p>
         <div class="joystick-instrument">
           <span class="joystick-label">Stick position</span>
-          <div class="joystick-pad" aria-hidden="true"><div class="joystick-dot" id="joystick-dot" hidden></div></div>
+          <div class="joystick-pad" aria-hidden="true">
+            <svg viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="49.5"/><circle cx="50" cy="50" r="47"/>
+              <circle cx="50" cy="50" r="22"/><circle cx="50" cy="50" r="5"/>
+              <path d="M50 3 V45 M50 55 V97 M3 50 H45 M55 50 H97"/>
+              <path d="M34.44 34.44 L16.77 16.77 M65.56 34.44 L83.23 16.77 M34.44 65.56 L16.77 83.23 M65.56 65.56 L83.23 83.23"/>
+              <g id="joystick-tick"><path d="M50 3 V10" transform="rotate(11.25 50 50)"/><path d="M50 3 V15" transform="rotate(22.5 50 50)"/><path d="M50 3 V10" transform="rotate(33.75 50 50)"/></g>
+              <use href="#joystick-tick" transform="rotate(45 50 50)"/><use href="#joystick-tick" transform="rotate(90 50 50)"/><use href="#joystick-tick" transform="rotate(135 50 50)"/>
+              <use href="#joystick-tick" transform="rotate(180 50 50)"/><use href="#joystick-tick" transform="rotate(225 50 50)"/><use href="#joystick-tick" transform="rotate(270 50 50)"/><use href="#joystick-tick" transform="rotate(315 50 50)"/>
+            </svg>
+            <div class="joystick-dot" id="joystick-dot" hidden></div>
+          </div>
         </div>
         <div class="joystick-values">
           <div><span class="joystick-label">X axis</span><strong id="joystick-x">—</strong></div>
